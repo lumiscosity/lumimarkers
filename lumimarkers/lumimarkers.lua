@@ -1,16 +1,17 @@
-local Marker = require "figuradm/marker"
-local PageHolder = require "figuradm/pageholder"
-marker_base = models.figuradm.marker.Marker:setLight(15, 15):setVisible(false)
-animations["figuradm.anchor"].idle:play():setSpeed(0.3)
-anchor = models.figuradm.anchor.World
+local Marker = require "lumimarkers/marker"
+local PageHolder = require "lumimarkers/pageholder"
+marker_base = models.lumimarkers.marker.Marker:setLight(15, 15):setVisible(false)
+animations["lumimarkers.anchor"].idle:play():setSpeed(0.3)
+anchor = models.lumimarkers.anchor.World
 -- {function (lambda)}
 chat_consumer = nil
 local mainPage = PageHolder:new()
 
-function pings.spawnMarker(pos)
+function spawnMarker(pos)
     for _, v in pairs(mainPage.markers) do
-        if v.pos == pos then
-            table.insert(newMarkers, v)
+        if v.marker:getPos() == pos then
+            host:setActionbar("There is already a marker at this position!")
+            return
         end
     end
     mainPage:insert(Marker:new(pos, new_marker, mainPage))
@@ -25,7 +26,7 @@ function spawnMarkerAtRaycast()
         if side ~= "up" then
             hitPos = hitPos + vec(0, 1, 0)
         end
-        pings.spawnMarker(hitPos*16)
+        spawnMarker(hitPos*16)
     end
 end
 

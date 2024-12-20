@@ -37,10 +37,7 @@ function PageHolder:remove(marker)
     self.markers = newMarkers
 
     for _, v in pairs(self.markers) do
-            self.page:newAction()
-            :title("Marker")
-            :item("snowball")
-            :onLeftClick(function() action_wheel:setPage(v.page) end)
+            self.page:setAction(-1, v.action)
     end
 
     action_wheel:setPage(self.page)
