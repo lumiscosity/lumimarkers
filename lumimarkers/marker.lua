@@ -84,7 +84,7 @@ function Marker:genMarkerPages()
             end
             host:setActionbar("Type the new name in chat, or 'stop' to cancel:")
         end)
-        self.page:newAction()
+    self.page:newAction()
         :title("Change icon")
         :item("item_frame")
         :onLeftClick(function()
@@ -132,7 +132,21 @@ function Marker:genMarkerPages()
             end
             host:setActionbar("Type the hex code of the color in chat, or 'stop' to cancel:")
         end)
-
+    self.page:newAction()
+        :title("Move")
+        :item("lead")
+        :onLeftClick(function()
+            if player:isLoaded() then
+                local eyePos = player:getPos() + vec(0, player:getEyeHeight(), 0)
+                local eyeEnd = eyePos + (player:getLookDir() * 20)
+                local block, hitPos, side = raycast:block(eyePos, eyeEnd)
+                hitPos = vec(math.floor(hitPos.x) + 0.5, math.floor(hitPos.y), math.floor(hitPos.z) + 0.5)
+                if side ~= "up" then
+                    hitPos = hitPos + vec(0, 1, 0)
+                end
+                self.marker:setPos(hitPos * 16)
+            end
+        end)
     self.page:newAction()
         :title("Delete")
         :item("iron_pickaxe")

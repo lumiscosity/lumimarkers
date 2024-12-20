@@ -31,7 +31,7 @@ function spawnMarkerAtRaycast()
 end
 
 function events.chat_send_message(msg)
-    if chat_consumer ~= nil then
+    if chat_consumer then
         chat_consumer(msg)
         chat_consumer = nil
         return nil
