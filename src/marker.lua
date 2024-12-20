@@ -33,10 +33,10 @@ function Marker:new(pos, action, holder)
         :title("Marker")
         :item("snowball")
         :onLeftClick(function() action_wheel:setPage(newObject.page) end)
+    local text_anchor = models:newPart("TextAnchor"):setPivot(0, 36, 0):setParentType("BILLBOARD"):moveTo(newObject.marker)
 
-    newObject.text = newObject.marker:newText("MarkerText"):setText("Marker"):setPos(0, 22, 0):setAlignment("CENTER")
+    newObject.text = text_anchor:newText("MarkerText"):setText("Marker"):setAlignment("CENTER"):setBackground(true):setScale(0.5, 0.5, 0.5)
     newObject:genMarkerPages()
-
     return newObject
 end
 
