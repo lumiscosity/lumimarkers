@@ -3,6 +3,7 @@ local Marker = require "lumimarkers/marker"
 marker_base = models.lumimarkers.marker.Marker:setLight(15, 15):setVisible(false)
 animations["lumimarkers.anchor"].idle:play():setSpeed(0.3)
 anchor = models.lumimarkers.anchor.World
+static_anchor = models:newPart("StaticAnchor", "World")
 -- {function (lambda)}
 chat_consumer = nil
 

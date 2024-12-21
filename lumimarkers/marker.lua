@@ -10,8 +10,10 @@ local Marker = {
     action = nil,
     -- The configuration page for this marker.
     page = nil,
-    -- The TextRenderer used to display this marker's name.
-    text = nil
+    -- The TextTask used to display this marker's name.
+    text = nil,
+    -- The EntityTask used to disguise this marker as an entity.
+    entity = nil
 }
 
 ---Spawns a new Marker.
@@ -30,7 +32,6 @@ function Marker:new(pos)
         :item("snowball")
         :onLeftClick(function() action_wheel:setPage(newObject.page) end)
     local text_anchor = models:newPart("TextAnchor", "BILLBOARD"):setPivot(0, 36, 0):moveTo(newObject.marker)
-
     newObject.text = text_anchor:newText("MarkerText"):setText("Marker"):setAlignment("CENTER"):setScale(0.5, 0.5, 0.5)--:setBackground(true) Uncomment this when the Iris texture atlas corruption bug is fixed!
     newObject:genMarkerPages()
     return newObject
@@ -131,12 +132,23 @@ function Marker:genMarkerPages()
             host:setActionbar("Type the hex code of the color in chat, or 'stop' to cancel:")
         end)
     self.page:newAction()
-        :title("Move")
-        :item("lead")
+        :title("Move to cursor")
+        :item("ender_pearl")
         :onLeftClick(function()
             local pos = Marker.positionFromRaycast()
             if Marker.positionIsFree(pos) then
                 self.marker:setPos(pos)
+            end
+        end)
+    self.page:newAction()
+        :title("Move to player")
+        :item("lead")
+        :onLeftClick(function()
+            if player:isLoaded() then
+                local pos = Marker.alignedPosition(player:getPos())
+                if Marker.positionIsFree(pos) then
+                    self.marker:setPos(pos)
+                end
             end
         end)
     self.page:newAction()
@@ -166,12 +178,16 @@ function Marker.positionFromRaycast()
         local eyePos = player:getPos() + vec(0, player:getEyeHeight(), 0)
         local eyeEnd = eyePos + (player:getLookDir() * 20)
         local block, hitPos, side = raycast:block(eyePos, eyeEnd)
-        hitPos = vec(math.floor(hitPos.x) + 0.5, math.floor(hitPos.y), math.floor(hitPos.z) + 0.5)
+        hitPos = Marker.alignedPosition(hitPos)
         if side ~= "up" then
-            hitPos = hitPos + vec(0, 1, 0)
+            hitPos = hitPos + vec(0, 16, 0)
         end
-        return hitPos * 16
+        return hitPos
     end
+end
+
+function Marker.alignedPosition(pos)
+    return vec(math.floor(pos.x) + 0.5, math.floor(pos.y), math.floor(pos.z) + 0.5) * 16
 end
 
 return Marker
