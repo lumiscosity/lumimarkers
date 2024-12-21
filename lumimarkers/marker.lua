@@ -1,5 +1,5 @@
-local PageHolder = require "lumimarkers/pageholder"
---- A class describing a marker.
+mainPage = require "lumimarkers/pageholder"
+---A class describing a marker.
 ---@class Marker
 ---@field publicProperty1 ModelPart
 ---@field publicProperty2 Page
@@ -11,29 +11,25 @@ local Marker = {
     -- The configuration page for this marker.
     page = nil,
     -- The TextRenderer used to display this marker's name.
-    text = nil,
-    -- A ref to the main page.
-    mainPage = nil
+    text = nil
 }
 
+---Spawns a new Marker.
 ---@param pos Vector3
----@param action Action
----@param holder PageHolder
 ---@return Marker
-function Marker:new(pos, action, holder)
+function Marker:new(pos)
     local newObject = setmetatable({}, self)
     self.__index = self
-    newObject["mainPage"] = holder
-    newObject["marker"] = marker_base:copy("MarkerModel")
+    newObject.marker = marker_base:copy("MarkerModel")
         :moveTo(anchor)
         :setPos(pos)
         :setVisible(true)
-    newObject["page"] = action_wheel:newPage("HolderPage")
-    newObject["action"] = newObject.mainPage.page:newAction()
+    newObject.page = action_wheel:newPage("HolderPage")
+    newObject.action = mainPage.page:newAction()
         :title("Marker")
         :item("snowball")
         :onLeftClick(function() action_wheel:setPage(newObject.page) end)
-    local text_anchor = models:newPart("TextAnchor"):setPivot(0, 36, 0):setParentType("BILLBOARD"):moveTo(newObject.marker)
+    local text_anchor = models:newPart("TextAnchor", "BILLBOARD"):setPivot(0, 36, 0):moveTo(newObject.marker)
 
     newObject.text = text_anchor:newText("MarkerText"):setText("Marker"):setAlignment("CENTER"):setScale(0.5, 0.5, 0.5)--:setBackground(true) Uncomment this when the Iris texture atlas corruption bug is fixed!
     newObject:genMarkerPages()
@@ -43,10 +39,6 @@ end
 function Marker:setName(name)
     self.action:title(name)
     self.text:setText(name)
-end
-
-function Marker:setActionIcon(id)
-    self.action:item(id)
 end
 
 function Marker:setSpecialColor(c)
@@ -62,14 +54,20 @@ end
 function Marker:delete()
     self.marker:setVisible(false)
     self.marker:moveTo(models)
-    self.mainPage:remove(self)
+    mainPage:remove(self)
 end
 
 function Marker:genMarkerPages()
     self.page:newAction()
         :title("Back")
         :item("amethyst_cluster")
-        :onLeftClick(function() action_wheel:setPage(self.mainPage.page) end)
+        :onLeftClick(function()
+            action_wheel:setPage(mainPage.page)
+            if chat_consumer then
+                host:setActionbar("Cancelled")
+                chat_consumer = nil
+            end
+        end)
     self.page:newAction()
         :title("Rename")
         :item("name_tag")
@@ -94,7 +92,7 @@ function Marker:genMarkerPages()
                         host:setActionbar("Invalid item!")
                         return
                     end
-                    self:setActionIcon(x)
+                    self.action:item(x)
                     host:setActionbar("Set icon to " .. x)
                 else
                     host:setActionbar("Cancelled")
@@ -136,15 +134,9 @@ function Marker:genMarkerPages()
         :title("Move")
         :item("lead")
         :onLeftClick(function()
-            if player:isLoaded() then
-                local eyePos = player:getPos() + vec(0, player:getEyeHeight(), 0)
-                local eyeEnd = eyePos + (player:getLookDir() * 20)
-                local block, hitPos, side = raycast:block(eyePos, eyeEnd)
-                hitPos = vec(math.floor(hitPos.x) + 0.5, math.floor(hitPos.y), math.floor(hitPos.z) + 0.5)
-                if side ~= "up" then
-                    hitPos = hitPos + vec(0, 1, 0)
-                end
-                self.marker:setPos(hitPos * 16)
+            local pos = Marker.positionFromRaycast()
+            if Marker.positionIsFree(pos) then
+                self.marker:setPos(pos)
             end
         end)
     self.page:newAction()
@@ -152,6 +144,34 @@ function Marker:genMarkerPages()
         :item("iron_pickaxe")
         :onLeftClick(function() self:delete() end)
 
+end
+
+---Checks if the queried position is free of markers. Position is assumed to be aligned.
+---@param pos Vector3
+---@return boolean
+function Marker.positionIsFree(pos)
+    for _, v in pairs(mainPage.markers) do
+        if v.marker:getPos() == pos then
+            host:setActionbar("There is already a marker at this position!")
+            return false
+        end
+    end
+    return true
+end
+
+---Performs a raycast to the cursor position and returns the adjusted marker position.
+---@return Vector3
+function Marker.positionFromRaycast()
+    if player:isLoaded() then
+        local eyePos = player:getPos() + vec(0, player:getEyeHeight(), 0)
+        local eyeEnd = eyePos + (player:getLookDir() * 20)
+        local block, hitPos, side = raycast:block(eyePos, eyeEnd)
+        hitPos = vec(math.floor(hitPos.x) + 0.5, math.floor(hitPos.y), math.floor(hitPos.z) + 0.5)
+        if side ~= "up" then
+            hitPos = hitPos + vec(0, 1, 0)
+        end
+        return hitPos * 16
+    end
 end
 
 return Marker

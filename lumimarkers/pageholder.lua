@@ -1,46 +1,41 @@
---- A class describing the main page.
+---A class describing the main page. Only one instance of a PageHolder exists.
 ---@class PageHolder
 local PageHolder = {
-    page = 0,
+    page = action_wheel:newPage(),
     markers = {}
 }
 
----@param m markers
----@return PageHolder
-function PageHolder:new(m)
-    local newObject = setmetatable({}, self)
-    self.__index = self
-    self.page = action_wheel:newPage()
-    self.markers = {}
-    return newObject
-end
-
-function PageHolder:insert(marker)
-    table.insert(self.markers, marker)
-end
-
-function PageHolder:remove(marker)
-    self.page = action_wheel:newPage()
-    self.page:newAction()
+---Regenerates the PageHolder.
+function PageHolder:reset()
+    PageHolder.page = action_wheel:newPage()
+    PageHolder.page:newAction()
     :title("Spawn marker")
     :item("amethyst_shard")
     :onLeftClick(spawnMarkerAtRaycast)
 
+    for _, v in pairs(PageHolder.markers) do
+        PageHolder.page:setAction(-1, v.action)
+    end
+end
+
+function PageHolder:insert(marker)
+    table.insert(PageHolder.markers, marker)
+end
+
+function PageHolder:remove(marker)
     local newMarkers = {}
 
-    for _, v in pairs(self.markers) do
+    for _, v in pairs(PageHolder.markers) do
         if v.marker:getVisible() == true then
             table.insert(newMarkers, v)
         end
     end
 
-    self.markers = newMarkers
+    PageHolder.markers = newMarkers
 
-    for _, v in pairs(self.markers) do
-            self.page:setAction(-1, v.action)
-    end
+    PageHolder:reset()
 
-    action_wheel:setPage(self.page)
+    action_wheel:setPage(PageHolder.page)
 end
 
 return PageHolder
