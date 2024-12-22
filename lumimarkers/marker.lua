@@ -145,7 +145,7 @@ function Marker:genMarkerPages()
         :item("lead")
         :onLeftClick(function()
             if player:isLoaded() then
-                local pos = Marker.alignedPosition(player:getPos())
+                local pos = Marker.alignedPosition(player:getPos()) * 16
                 if Marker.positionIsFree(pos) then
                     self.marker:setPos(pos)
                 end
@@ -176,18 +176,22 @@ end
 function Marker.positionFromRaycast()
     if player:isLoaded() then
         local eyePos = player:getPos() + vec(0, player:getEyeHeight(), 0)
-        local eyeEnd = eyePos + (player:getLookDir() * 20)
-        local block, hitPos, side = raycast:block(eyePos, eyeEnd)
+        local block, hitPos, side = raycast:block(eyePos, eyePos + (player:getLookDir() * 20))
         hitPos = Marker.alignedPosition(hitPos)
-        if side ~= "up" then
-            hitPos = hitPos + vec(0, 16, 0)
+        if side == "down" then
+            hitPos = hitPos - vec(0, 2, 0)
         end
-        return hitPos
+        while raycast:block(hitPos, hitPos + 0.1):hasCollision() do
+            hitPos = hitPos + vec(0, 1, 0)
+        end
+        return hitPos * 16
     end
 end
 
+---Returns a block-aligned marker position.
+---@return Vector3
 function Marker.alignedPosition(pos)
-    return vec(math.floor(pos.x) + 0.5, math.floor(pos.y), math.floor(pos.z) + 0.5) * 16
+    return vec(math.floor(pos.x) + 0.5, math.floor(pos.y), math.floor(pos.z) + 0.5)
 end
 
 return Marker
