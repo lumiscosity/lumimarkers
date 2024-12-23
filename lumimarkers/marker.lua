@@ -1,4 +1,9 @@
-mainPage = require "lumimarkers/pageholder"
+local mainPage = require "lumimarkers/pageholder"
+local anchor = models.lumimarkers.anchor.World
+animations["lumimarkers.anchor"].idle:play():setSpeed(0.3)
+local static_anchor = models:newPart("StaticAnchor", "World")
+local marker_base = models.lumimarkers.marker.Marker:setLight(15, 15):setVisible(false)
+local chat_consumer = nil
 ---A class describing a marker.
 ---@class Marker
 ---@field publicProperty1 ModelPart
@@ -56,6 +61,10 @@ function Marker:delete()
     self.marker:setVisible(false)
     self.marker:moveTo(models)
     mainPage:remove(self)
+    if chat_consumer then
+        host:setActionbar("Cancelled")
+        chat_consumer = nil
+    end
 end
 
 function Marker:genMarkerPages()
@@ -181,7 +190,7 @@ function Marker.positionFromRaycast()
         if side == "down" then
             hitPos = hitPos - vec(0, 2, 0)
         end
-        while raycast:block(hitPos, hitPos + 0.1):hasCollision() do
+        while world.getBlockState(hitPos):hasCollision() do
             hitPos = hitPos + vec(0, 1, 0)
         end
         return hitPos * 16
@@ -192,6 +201,16 @@ end
 ---@return Vector3
 function Marker.alignedPosition(pos)
     return vec(math.floor(pos.x) + 0.5, math.floor(pos.y), math.floor(pos.z) + 0.5)
+end
+
+function events.chat_send_message(msg)
+    if chat_consumer then
+        chat_consumer(msg)
+        chat_consumer = nil
+        return nil
+    else
+        return msg
+    end
 end
 
 return Marker

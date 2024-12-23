@@ -1,26 +1,10 @@
 local Marker = require "lumimarkers/marker"
--- mainPage is imported from Marker
-marker_base = models.lumimarkers.marker.Marker:setLight(15, 15):setVisible(false)
-animations["lumimarkers.anchor"].idle:play():setSpeed(0.3)
-anchor = models.lumimarkers.anchor.World
-static_anchor = models:newPart("StaticAnchor", "World")
--- {function (lambda)}
-chat_consumer = nil
+local mainPage = require "lumimarkers/pageholder"
 
 function spawnMarkerAtRaycast()
     local pos = Marker.positionFromRaycast()
     if Marker.positionIsFree(pos) then
         mainPage:insert(Marker:new(pos))
-    end
-end
-
-function events.chat_send_message(msg)
-    if chat_consumer then
-        chat_consumer(msg)
-        chat_consumer = nil
-        return nil
-    else
-        return msg
     end
 end
 
