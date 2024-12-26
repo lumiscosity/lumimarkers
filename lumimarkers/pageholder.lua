@@ -28,7 +28,7 @@ function PageHolder:remove(marker)
     local newMarkers = {}
 
     for _, v in pairs(PageHolder.markers) do
-        if v.marker:getVisible() == true then
+        if not v.removed then
             table.insert(newMarkers, v)
         end
     end
