@@ -17,6 +17,8 @@ local Marker = {
     page = nil,
     -- The TextTask used to display this marker's name.
     text = nil,
+    -- A ModelPart with the Billboard parent type which holds the text.
+    text_anchor = nil,
     -- The EntityTask used to disguise this marker as an entity.
     entity = nil
 }
@@ -36,8 +38,8 @@ function Marker:new(pos)
         :title("Marker")
         :item("snowball")
         :onLeftClick(function() action_wheel:setPage(newObject.page) end)
-    local text_anchor = models:newPart("TextAnchor", "BILLBOARD"):setPivot(0, 36, 0):moveTo(newObject.marker)
-    newObject.text = text_anchor:newText("MarkerText"):setText("Marker"):setAlignment("CENTER"):setScale(0.5, 0.5, 0.5)--:setBackground(true) Uncomment this when the Iris texture atlas corruption bug is fixed!
+    newObject.text_anchor = models:newPart("TextAnchor", "BILLBOARD"):setPivot(0, 34, 0):moveTo(newObject.marker)
+    newObject.text = newObject.text_anchor:newText("MarkerText"):setText("Marker"):setAlignment("CENTER"):setScale(0.5, 0.5, 0.5)--:setBackground(true) Uncomment this when the Iris texture atlas corruption bug is fixed!
     newObject:genMarkerPages()
     return newObject
 end
@@ -159,6 +161,26 @@ function Marker:genMarkerPages()
                     self.marker:setPos(pos)
                 end
             end
+        end)
+    self.page:newAction()
+        :title("Set scale")
+        :item("wheat")
+        :onLeftClick(function()
+            chat_consumer = function(x)
+                if x ~= "stop" then
+                    local new_scale = tonumber(x)
+                    if not new_scale then
+                        host:setActionbar("Not a number!")
+                        return
+                    end
+                    self.marker:setScale(new_scale, new_scale, new_scale)
+                    self.text_anchor:setPivot(0, 34, 0)
+                    host:setActionbar("Set scale to " .. x)
+                else
+                    host:setActionbar("Cancelled")
+                end
+            end
+            host:setActionbar("Type the new scale (1 is default), or 'stop' to cancel:")
         end)
     self.page:newAction()
         :title("Delete")

@@ -22,6 +22,8 @@ function PageHolder:insert(marker)
     table.insert(PageHolder.markers, marker)
 end
 
+---Removes the given marker from the PageHolder.
+---@param marker Marker
 function PageHolder:remove(marker)
     local newMarkers = {}
 
