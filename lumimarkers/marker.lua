@@ -208,10 +208,10 @@ function Marker:genMarkerPages()
                             self.entity = self.static_anchor:newEntity("MarkerMob")
                                 :setNbt(x)
                         end)
-                        if not success then
-                            host:setActionbar("Invalid NBT!")
-                        elseif x == "disable" then
+                        if x == "disable" then
                             host:setActionbar("Mob disguise disabled")
+                        elseif not success then
+                            host:setActionbar("Invalid NBT!")
                         end
                         if (not success) or (x == "disable") then
                             self.marker:setVisible(true)
@@ -240,11 +240,10 @@ function Marker:genMarkerPages()
                                 :setNbt('{id:"'..x..'"}')
                         end)
 
-                        if not success then
-                            host:setActionbar("Invalid mob!")
-                        end
                         if x == "disable" then
                             host:setActionbar("Mob disguise disabled")
+                        elseif not success then
+                            host:setActionbar("Invalid mob!")
                         end
                         if (not success) or (x == "disable") then
                             self.marker:setVisible(true)
