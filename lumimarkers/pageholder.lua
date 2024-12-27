@@ -18,6 +18,8 @@ function PageHolder:reset()
     end
 end
 
+---Adds the given marker to the PageHolder.
+---@param marker Marker
 function PageHolder:insert(marker)
     table.insert(PageHolder.markers, marker)
 end

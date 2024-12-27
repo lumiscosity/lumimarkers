@@ -204,19 +204,22 @@ function Marker:genMarkerPages()
                 -- NBT mode
                 chat_consumer = function(x)
                     if x ~= "stop" then
-                        if x == "disable" then
-                            self.marker:setVisible(true)
-                            self.entity:setVisible(false)
-                            self.text_anchor:moveTo(self.marker)
-                            host:setActionbar("Mob disguise disabled")
-                            return
-                        end
                         local success = pcall(function()
                             self.entity = self.static_anchor:newEntity("MarkerMob")
                                 :setNbt(x)
                         end)
                         if not success then
                             host:setActionbar("Invalid NBT!")
+                        elseif x == "disable" then
+                            host:setActionbar("Mob disguise disabled")
+                        end
+                        if (not success) or (x == "disable") then
+                            self.marker:setVisible(true)
+                            if self.entity then
+                                self.entity:setVisible(false)
+                            end
+                            self.text_anchor:moveTo(self.marker)
+                            self.entity = nil
                             return
                         end
                         self.marker:setVisible(false)
@@ -232,19 +235,24 @@ function Marker:genMarkerPages()
                 -- Mob ID mode
                 chat_consumer = function(x)
                     if x ~= "stop" then
-                        if x == "disable" then
-                            self.marker:setVisible(true)
-                            self.entity:setVisible(false)
-                            self.text_anchor:moveTo(self.marker)
-                            host:setActionbar("Mob disguise disabled")
-                            return
-                        end
                         local success = pcall(function()
-                                self.entity = self.static_anchor:newEntity("MarkerMob")
+                            self.entity = self.static_anchor:newEntity("MarkerMob")
                                 :setNbt('{id:"'..x..'"}')
-                            end)
+                        end)
+
                         if not success then
                             host:setActionbar("Invalid mob!")
+                        end
+                        if x == "disable" then
+                            host:setActionbar("Mob disguise disabled")
+                        end
+                        if (not success) or (x == "disable") then
+                            self.marker:setVisible(true)
+                            if self.entity then
+                                self.entity:setVisible(false)
+                            end
+                            self.text_anchor:moveTo(self.marker)
+                            self.entity = nil
                             return
                         end
                         self.marker:setVisible(false)
@@ -277,6 +285,26 @@ function Marker:genMarkerPages()
                     end
                     host:setActionbar("Type the new text height (34 is default, 16 is one block), or 'stop' to cancel:")
                     end)
+    self.page:newAction()
+        :title("Rotate")
+        :item("compass")
+        :onLeftClick(function()
+            chat_consumer = function(x)
+                if x ~= "stop" then
+                    local new_rot = tonumber(x)
+                    if not new_rot then
+                        host:setActionbar("Not a number!")
+                        return
+                    end
+                    self.marker:setRot(0, new_rot,0)
+                    self.static_anchor:setRot(0, new_rot,0)
+                    host:setActionbar("Set rotation to " .. x)
+                else
+                    host:setActionbar("Cancelled")
+                end
+            end
+            host:setActionbar("Type the new rotation or 'stop' to cancel:")
+        end)
 end
 
 ---Checks if the queried position is free of markers. Position is assumed to be aligned.
