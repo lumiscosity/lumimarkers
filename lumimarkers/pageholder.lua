@@ -21,13 +21,11 @@ function PageHolder:reset()
         if not v.removed then
             next_id = next_id + 1
             v.id = next_id
-            table.insert(newMarkers, v)
+            newMarkers[next_id] = v
         end
     end
 
     PageHolder.markers = newMarkers
-
-
 
     for _, v in pairs(PageHolder.markers) do
         PageHolder.page:setAction(-1, v.action)
@@ -39,7 +37,7 @@ end
 function PageHolder:insert(marker)
     next_id = next_id + 1
     marker.id = next_id
-    table.insert(PageHolder.markers, marker)
+    PageHolder.markers[next_id] = marker
 end
 
 ---Removes markers queued for deletion.
