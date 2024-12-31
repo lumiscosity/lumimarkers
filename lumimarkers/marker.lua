@@ -163,7 +163,7 @@ function Marker:genMarkerPages()
         :onLeftClick(function()
             chat_consumer = function(x)
                 if x ~= "stop" then
-                    self.action:title(name)
+                    self.action:title(x)
                     pings.lm_setName(x, self.id)
                     host:setActionbar("Set marker name to " .. x)
                 else
