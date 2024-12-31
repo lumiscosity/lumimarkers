@@ -84,8 +84,8 @@ function pings.lm_move(pos, id)
 end
 
 function pings.lm_setScale(scale, id)
-    ph.markers[id].marker:setScale(new_scale, new_scale, new_scale)
-    ph.markers[id].static_anchor:setScale(new_scale, new_scale, new_scale)
+    ph.markers[id].marker:setScale(scale, scale, scale)
+    ph.markers[id].static_anchor:setScale(scale, scale, scale)
 end
 
 function pings.lm_setTextHeight(height, id)
@@ -95,6 +95,55 @@ end
 function pings.lm_setRot(rot, id)
     ph.markers[id].marker:setRot(0, rot,0)
     ph.markers[id].static_anchor:setRot(0, rot,0)
+end
+
+function pings.lm_disguiseAsNBT(x, id)
+    local success = pcall(function()
+        ph.markers[id].entity = ph.markers[id].static_anchor:newEntity("MarkerMob")
+            :setNbt(x)
+    end)
+    if x == "disable" then
+        host:setActionbar("Mob disguise disabled")
+    elseif not success then
+        host:setActionbar("Invalid NBT!")
+    end
+    if (not success) or (x == "disable") then
+        ph.markers[id].marker:setVisible(true)
+        if ph.markers[id].entity then
+            ph.markers[id].entity:setVisible(false)
+        end
+        ph.markers[id].text_anchor:moveTo(ph.markers[id].marker)
+        ph.markers[id].entity = nil
+        return
+    end
+    ph.markers[id].marker:setVisible(false)
+    ph.markers[id].entity:setVisible(true)
+    ph.markers[id].text_anchor:moveTo(ph.markers[id].static_anchor)
+end
+
+function pings.lm_disguiseAsMob(x, id)
+    local success = pcall(function()
+        ph.markers[id].entity = ph.markers[id].static_anchor:newEntity("MarkerMob")
+            :setNbt('{id:"'..x..'"}')
+    end)
+
+    if x == "disable" then
+        host:setActionbar("Mob disguise disabled")
+    elseif not success then
+        host:setActionbar("Invalid mob!")
+    end
+    if (not success) or (x == "disable") then
+        ph.markers[id].marker:setVisible(true)
+        if ph.markers[id].entity then
+            ph.markers[id].entity:setVisible(false)
+        end
+        ph.markers[id].text_anchor:moveTo(ph.markers[id].marker)
+        ph.markers[id].entity = nil
+        return
+    end
+    ph.markers[id].marker:setVisible(false)
+    ph.markers[id].entity:setVisible(true)
+    ph.markers[id].text_anchor:moveTo(ph.markers[id].static_anchor)
 end
 
 function Marker:genMarkerPages()
@@ -222,27 +271,7 @@ function Marker:genMarkerPages()
                 -- NBT mode
                 chat_consumer = function(x)
                     if x ~= "stop" then
-                        local success = pcall(function()
-                            self.entity = self.static_anchor:newEntity("MarkerMob")
-                                :setNbt(x)
-                        end)
-                        if x == "disable" then
-                            host:setActionbar("Mob disguise disabled")
-                        elseif not success then
-                            host:setActionbar("Invalid NBT!")
-                        end
-                        if (not success) or (x == "disable") then
-                            self.marker:setVisible(true)
-                            if self.entity then
-                                self.entity:setVisible(false)
-                            end
-                            self.text_anchor:moveTo(self.marker)
-                            self.entity = nil
-                            return
-                        end
-                        self.marker:setVisible(false)
-                        self.entity:setVisible(true)
-                        self.text_anchor:moveTo(self.static_anchor)
+                        pings.lm_disguiseAsNBT(x, self.id)
                         host:setActionbar("Disguised as mob")
                     else
                         host:setActionbar("Cancelled")
@@ -253,28 +282,7 @@ function Marker:genMarkerPages()
                 -- Mob ID mode
                 chat_consumer = function(x)
                     if x ~= "stop" then
-                        local success = pcall(function()
-                            self.entity = self.static_anchor:newEntity("MarkerMob")
-                                :setNbt('{id:"'..x..'"}')
-                        end)
-
-                        if x == "disable" then
-                            host:setActionbar("Mob disguise disabled")
-                        elseif not success then
-                            host:setActionbar("Invalid mob!")
-                        end
-                        if (not success) or (x == "disable") then
-                            self.marker:setVisible(true)
-                            if self.entity then
-                                self.entity:setVisible(false)
-                            end
-                            self.text_anchor:moveTo(self.marker)
-                            self.entity = nil
-                            return
-                        end
-                        self.marker:setVisible(false)
-                        self.entity:setVisible(true)
-                        self.text_anchor:moveTo(self.static_anchor)
+                        pings.lm_disguiseAsMob(x, self.id)
                         host:setActionbar("Disguised as mob " .. x)
                     else
                         host:setActionbar("Cancelled")
