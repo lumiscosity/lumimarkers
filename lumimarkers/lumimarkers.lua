@@ -1,7 +1,7 @@
 local Marker = require "lumimarkers/marker"
 local mainPage = require "lumimarkers/pageholder"
 
-function spawnMarkerAtRaycast()
+function pings.lm_spawnMarkerAtRaycast()
     local pos = Marker.positionFromRaycast()
     if Marker.positionIsFree(pos) then
         mainPage:insert(Marker:new(pos))

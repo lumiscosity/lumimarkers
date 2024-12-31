@@ -1,4 +1,4 @@
-local mainPage = require "lumimarkers/pageholder"
+local ph = require "lumimarkers/pageholder"
 local anchor = models.lumimarkers.anchor.World
 animations["lumimarkers.anchor"].idle:play():setSpeed(0.3)
 local marker_base = models.lumimarkers.marker.Marker:setLight(15, 15):setVisible(false)
@@ -9,6 +9,8 @@ local chat_consumer = nil
 ---@field publicProperty1 ModelPart
 ---@field publicProperty2 Page
 local Marker = {
+    -- The position of this marker in the PageHolder.
+    id = nil,
     -- The marker model.
     marker = nil,
     -- The action used to represent this marker. The title of this action is the marker's name.
@@ -39,7 +41,7 @@ function Marker:new(pos)
         :setVisible(true)
     newObject.static_anchor = models:newPart("EntityAnchor", "World"):setPos(pos)
     newObject.page = action_wheel:newPage("HolderPage")
-    newObject.action = mainPage.page:newAction()
+    newObject.action = ph.page:newAction()
         :title("Marker")
         :item("snowball")
         :onLeftClick(function() action_wheel:setPage(newObject.page) end)
@@ -50,31 +52,49 @@ function Marker:new(pos)
     return newObject
 end
 
-function Marker:setName(name)
-    self.action:title(name)
-    self.text:setText(name)
+function pings.lm_setName(name, id)
+    ph.markers[id].text:setText(name)
 end
 
-function Marker:setSpecialColor(c)
-    self.marker:setColor()
-    self.marker:setPrimaryTexture("Custom", textures["lumimarkers."..c])
+function pings.lm_setSpecialColor(c, id)
+    ph.markers[id].marker:setColor()
+    ph.markers[id].marker:setPrimaryTexture("Custom", textures["lumimarkers."..c])
 end
 
-function Marker:setColor(c)
-    self.marker:setColor(vectors.hexToRGB(c))
-    self.marker:setPrimaryTexture("Custom", textures["lumimarkers.marker_white"])
+function pings.lm_setColor(c)
+    ph.markers[id].marker:setColor(vectors.hexToRGB(c))
+    ph.markers[id].marker:setPrimaryTexture("Custom", textures["lumimarkers.marker_white"])
 end
 
-function Marker:delete()
-    self.removed = true
-    self.static_anchor:setVisible(false)
-    self.marker:setVisible(false)
-    self.marker:moveTo(models)
-    mainPage:remove(self)
+function pings.lm_delete(id)
+    ph.markers[id].removed = true
+    ph.markers[id].static_anchor:setVisible(false)
+    ph.markers[id].marker:setVisible(false)
+    ph.markers[id].marker:moveTo(models)
+    ph:remove()
     if chat_consumer then
         host:setActionbar("Cancelled")
         chat_consumer = nil
     end
+end
+
+function pings.lm_move(pos, id)
+    ph.markers[id].marker:setPos(pos)
+    ph.markers[id].static_anchor:setPos(pos)
+end
+
+function pings.lm_setScale(scale, id)
+    ph.markers[id].marker:setScale(new_scale, new_scale, new_scale)
+    ph.markers[id].static_anchor:setScale(new_scale, new_scale, new_scale)
+end
+
+function pings.lm_setTextHeight(height, id)
+    ph.markers[id].text_anchor:setPivot(0, height, 0)
+end
+
+function pings.lm_setRot(rot, id)
+    ph.markers[id].marker:setRot(0, rot,0)
+    ph.markers[id].static_anchor:setRot(0, rot,0)
 end
 
 function Marker:genMarkerPages()
@@ -82,7 +102,7 @@ function Marker:genMarkerPages()
         :title("Back")
         :item("amethyst_cluster")
         :onLeftClick(function()
-            action_wheel:setPage(mainPage.page)
+            action_wheel:setPage(ph.page)
             if chat_consumer then
                 host:setActionbar("Cancelled")
                 chat_consumer = nil
@@ -94,7 +114,8 @@ function Marker:genMarkerPages()
         :onLeftClick(function()
             chat_consumer = function(x)
                 if x ~= "stop" then
-                    self:setName(x)
+                    self.action:title(name)
+                    pings.lm_setName(x, self.id)
                     host:setActionbar("Set marker name to " .. x)
                 else
                     host:setActionbar("Cancelled")
@@ -131,17 +152,17 @@ function Marker:genMarkerPages()
                         host:setActionbar("Invalid color!")
                         return
                     elseif x == "marker_blue" then
-                        self:setSpecialColor(x)
+                        pings.lm_setSpecialColor(x, self.id)
                     elseif x == "marker_teal" then
-                        self:setSpecialColor(x)
+                        pings.lm_setSpecialColor(x, self.id)
                     elseif x == "marker_red" then
-                        self:setSpecialColor(x)
+                        pings.lm_setSpecialColor(x, self.id)
                     elseif x == "marker_green" then
-                        self:setSpecialColor(x)
+                        pings.lm_setSpecialColor(x, self.id)
                     elseif x == "marker_white" then
-                        self:setSpecialColor(x)
+                        pings.lm_setSpecialColor(x, self.id)
                     else
-                        self:setColor(x)
+                        pings.lm_setColor(x, self.id)
                     end
                     host:setActionbar("Set marker color to " .. x)
                 else
@@ -156,8 +177,7 @@ function Marker:genMarkerPages()
         :onLeftClick(function()
             local pos = Marker.positionFromRaycast()
             if Marker.positionIsFree(pos) then
-                self.marker:setPos(pos)
-                self.static_anchor:setPos(pos)
+                pings.lm_move(pos, self.id)
             end
         end)
     self.page:newAction()
@@ -167,8 +187,7 @@ function Marker:genMarkerPages()
             if player:isLoaded() then
                 local pos = Marker.alignedPosition(player:getPos()) * 16
                 if Marker.positionIsFree(pos) then
-                    self.marker:setPos(pos)
-                    self.static_anchor:setPos(pos)
+                    pings.lm_move(pos, self.id)
                 end
             end
         end)
@@ -183,8 +202,7 @@ function Marker:genMarkerPages()
                         host:setActionbar("Not a number!")
                         return
                     end
-                    self.marker:setScale(new_scale, new_scale, new_scale)
-                    self.static_anchor:setScale(new_scale, new_scale, new_scale)
+                    pings.lm_setScale(new_scale, self.id)
                     host:setActionbar("Set scale to " .. x)
                 else
                     host:setActionbar("Cancelled")
@@ -195,7 +213,7 @@ function Marker:genMarkerPages()
     self.page:newAction()
         :title("Delete")
         :item("iron_pickaxe")
-        :onLeftClick(function() self:delete() end)
+        :onLeftClick(function() pings.lm_delete(self.id) end)
     self.page:newAction()
         :title("Disguise as mob")
         :item("ghast_spawn_egg")
@@ -276,7 +294,7 @@ function Marker:genMarkerPages()
                 host:setActionbar("Not a number!")
                 return
                 end
-                self.text_anchor:setPivot(0, new_height, 0)
+                pings.lm_setTextHeight(new_height, self.id)
                 host:setActionbar("Set text height to " .. x)
                 else
                     host:setActionbar("Cancelled")
@@ -295,8 +313,7 @@ function Marker:genMarkerPages()
                         host:setActionbar("Not a number!")
                         return
                     end
-                    self.marker:setRot(0, new_rot,0)
-                    self.static_anchor:setRot(0, new_rot,0)
+                    pings.lm_setRot(new_rot, self.id)
                     host:setActionbar("Set rotation to " .. x)
                 else
                     host:setActionbar("Cancelled")
@@ -310,7 +327,7 @@ end
 ---@param pos Vector3
 ---@return boolean
 function Marker.positionIsFree(pos)
-    for _, v in pairs(mainPage.markers) do
+    for _, v in pairs(ph.markers) do
         if v.marker:getPos() == pos then
             host:setActionbar("There is already a marker at this position!")
             return false
