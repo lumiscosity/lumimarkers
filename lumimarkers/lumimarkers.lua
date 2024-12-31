@@ -1,3 +1,12 @@
+--  __    __ __ ___  ___ __ ___  ___  ___  ____  __ __  ____ ____   __
+--  ||    || || ||\\//|| || ||\\//|| // \\ || \\ || // ||    || \\ (( \
+--  ||    || || || \/ || || || \/ || ||=|| ||_// ||<<  ||==  ||_//  \\
+--  ||__| \\_// ||    || || ||    || || || || \\ || \\ ||___ || \\ \_))
+--
+--  v1.0.0 - made by lumiscosity
+--  See https://github.com/lumiscosity/lumimarkers for details!
+--
+
 local Marker = require "lumimarkers/marker"
 local mainPage = require "lumimarkers/pageholder"
 
@@ -5,15 +14,6 @@ function pings.lm_spawnMarkerAtRaycast()
     local pos = Marker.positionFromRaycast()
     if Marker.positionIsFree(pos) then
         mainPage:insert(Marker:new(pos))
-    end
-end
-
-function events.mouse_press(button, action, modifier)
-    if button == 1 and action == 1 then
-        local eyePos = player:getPos() + vec(0, player:getEyeHeight(), 0)
-        local eyeEnd = eyePos + (player:getLookDir() * 20)
-        local hitLocation = { { vec(0, 0, 0), vec(1, 1, 1) } } -- this is the block location of 0,0,0 in the world
-        local aabb, hitPos, side, aabbHitIndex = raycast:aabb(eyePos, eyeEnd, hitLocation)
     end
 end
 
