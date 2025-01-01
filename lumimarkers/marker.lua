@@ -65,14 +65,22 @@ function pings.lm_setName(name, id)
     ph.markers[id].text:setText(name)
 end
 
+local function getTexture(name)
+    for _, v in pairs(textures:getTextures()) do
+       if v.name == name then
+           return v
+        end
+    end
+end
+
 function pings.lm_setSpecialColor(c, id)
     ph.markers[id].marker:setColor()
-    ph.markers[id].marker:setPrimaryTexture("Custom", textures["lumimarkers."..c])
+    ph.markers[id].marker:setPrimaryTexture("Custom", getTexture("lumimarkers.marker."..c))
 end
 
 function pings.lm_setColor(c, id)
     ph.markers[id].marker:setColor(vectors.hexToRGB(c))
-    ph.markers[id].marker:setPrimaryTexture("Custom", textures["lumimarkers.marker_white"])
+    ph.markers[id].marker:setPrimaryTexture("Custom", getTexture("lumimarkers.marker.marker_white"))
 end
 
 function pings.lm_setModelColor(c, id)
