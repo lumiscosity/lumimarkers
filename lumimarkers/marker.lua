@@ -200,138 +200,95 @@ function pings.lm_setLight(light, id)
     end
 end
 
-function lm_disableDisguise(id)
+function lm_disguise(x, id, dis_type, silent)
     local m = ph.markers[id]
-    m.marker:setVisible(true)
-    if m.entity then
-        m.entity:setVisible(false)
+    local success = nil
+    if dis_type == 0 then
+        success = pcall(function()
+            m.entity = m.static_anchor
+                :newEntity("MarkerMob")
+                :setNbt(x)
+        end)
+    elseif dis_type == 1 then
+        success = pcall(function()
+            m.entity = m.static_anchor
+                :newEntity("MarkerMob")
+                :setNbt('{id:"'..x..'"}')
+        end)
+    else
+        success = pcall(function()
+            m.model = models.lumimarkers.custom[x]:copy("MarkerDisguise")
+                :moveTo(m.static_anchor)
+                :setVisible(true)
+        end)
     end
-    if m.model then
-        m.model:setVisible(false)
-    end
-    m.text_anchor:moveTo(m.marker)
-    m.entity = nil
-    m.model = nil
-    m.dis_type = nil
-    m.dis_cont = nil
-end
-
-function lm_disguiseAsNBT(x, id, silent)
-    local m = ph.markers[id]
-    local success = pcall(function()
-        m.entity = m.static_anchor
-            :newEntity("MarkerMob")
-            :setNbt(x)
-    end)
     if not silent then
         if x == "disable" then
             host:setActionbar("Disguise disabled")
         elseif not success then
-            host:setActionbar("Invalid NBT!")
+            local msg = nil
+            if dis_type == 0 then
+                msg = "Invalid NBT!"
+            elseif dis_type == 1 then
+                msg = "Invalid mob!"
+            else
+                msg = "Invalid model!"
+            end
+            host:setActionbar(msg)
         end
     end
-    if m.model then
-        m.model:setVisible(false)
-        m.model = nil
+    if dis_type == 2 then
+        if m.entity then
+            m.entity:setVisible(false)
+            m.entity = nil
+        end
+    else
+        if m.model then
+            m.model:setVisible(false)
+            m.model = nil
+        end
     end
     if (not success) or (x == "disable") then
-        lm_disableDisguise(id)
-        return
-    end
-    m.marker:setVisible(false)
-    m.entity:setVisible(true)
-    m.text_anchor:moveTo(m.static_anchor)
-    m.dis_type = 0
-    m.dis_cont = x
-    if not silent then
-        host:setActionbar("Disguised as mob")
-    end
-end
-
-function pings.lm_disguiseAsNBT(x, id)
-    if ph.markers[id] then
-        lm_disguiseAsNBT(x, id)
-    end
-end
-
-function lm_disguiseAsMob(x, id, silent)
-    local m = ph.markers[id]
-    local success = pcall(function()
-        m.entity = m.static_anchor
-            :newEntity("MarkerMob")
-            :setNbt('{id:"'..x..'"}')
-    end)
-
-    if not silent then
-        if x == "disable" then
-            host:setActionbar("Disguise disabled")
-        elseif not success then
-            host:setActionbar("Invalid mob!")
+        local m = ph.markers[id]
+        m.marker:setVisible(true)
+        if m.entity then
+            m.entity:setVisible(false)
         end
-    end
-    if m.model then
-        m.model:setVisible(false)
-        m.model = nil
-    end
-    if (not success) or (x == "disable") then
-        lm_disableDisguise(id)
-        return
-    end
-    m.marker:setVisible(false)
-    m.entity:setVisible(true)
-    m.text_anchor:moveTo(m.static_anchor)
-    m.dis_type = 1
-    m.dis_cont = x
-    if not silent then
-        host:setActionbar("Disguised as mob " .. x)
-    end
-end
-
-function pings.lm_disguiseAsMob(x, id)
-    if ph.markers[id] then
-        lm_disguiseAsMob(x, id)
-    end
-end
-
-function lm_disguiseAsModel(x, id, silent)
-    local m = ph.markers[id]
-    local success = pcall(function()
-        m.model = models.lumimarkers.custom[x]:copy("MarkerDisguise")
-            :moveTo(m.static_anchor)
-            :setVisible(true)
-    end)
-    if not silent then
-        if x == "disable" then
-            host:setActionbar("Disguise disabled")
-        elseif not success then
-            host:setActionbar("Invalid model!")
+        if m.model then
+            m.model:setVisible(false)
         end
-    end
-    if m.entity then
-        m.entity:setVisible(false)
+        m.text_anchor:moveTo(m.marker)
         m.entity = nil
-    end
-    if (not success) or (x == "disable") then
-        lm_disableDisguise(id)
+        m.model = nil
+        m.dis_type = nil
+        m.dis_cont = nil
         return
     end
     m.marker:setVisible(false)
-    m.model:setVisible(true)
+    m.entity:setVisible(true)
     m.text_anchor:moveTo(m.static_anchor)
-    m.dis_type = 2
+    m.dis_type = dis_type
     m.dis_cont = x
     if not silent then
-        host:setActionbar("Disguised as model " .. x)
+        local msg = nil
+        if dis_type == 0 then
+            msg = "Disguised as mob"
+        elseif dis_type == 1 then
+            msg = "Disguised as mob "..x
+        else
+            msg = "Disguised as model "..x
+        end
+        host:setActionbar(msg)
     end
 end
 
-function pings.lm_disguiseAsModel(x, id)
+function pings.lm_disguise(x, id, dis_type)
     if ph.markers[id] then
-        lm_disguiseAsModel(x, id)
+        lm_disguise(x, id, dis_type)
     end
 end
 
-function pings.lm_reconstruct(name, c, spc, pos, scale, height, rot, light, disguise_type, dis_cont, id)
+function pings.lm_reconstruct(name, c, spc, pos, scale, height, rot, light, dis_type, dis_cont, id)
     if not ph.markers[id] then
         marker = Marker:new(pos, true)
         ph.sync(marker, id)
@@ -351,13 +308,7 @@ function pings.lm_reconstruct(name, c, spc, pos, scale, height, rot, light, disg
     lm_setTextHeight(height, id)
     lm_setRot(rot, id)
     lm_setLight(light, id)
-    if disguise_type == 0 then
-        lm_disguiseAsNBT(dis_cont, id, 1)
-    elseif disguise_type == 1 then
-        lm_disguiseAsMob(dis_cont, id, 1)
-    elseif disguise_type == 2 then
-        lm_disguiseAsModel(dis_cont, id, 1)
-    end
+    lm_disguise(dis_cont, id, dis_type, 1)
 end
 
 function Marker:genMarkerPages()
@@ -376,13 +327,9 @@ function Marker:genMarkerPages()
         :item("name_tag")
         :onLeftClick(function()
             chat_consumer = function(x)
-                if x ~= "stop" then
-                    self.action:title(x)
-                    pings.lm_setName(x, self.id)
-                    host:setActionbar("Set marker name to " .. x)
-                else
-                    host:setActionbar("Cancelled")
-                end
+                self.action:title(x)
+                pings.lm_setName(x, self.id)
+                host:setActionbar("Set marker name to " .. x)
             end
             host:setActionbar("Type the new name in chat, or 'stop' to cancel:")
         end)
@@ -391,16 +338,12 @@ function Marker:genMarkerPages()
         :item("item_frame")
         :onLeftClick(function()
             chat_consumer = function(x)
-                if x ~= "stop" then
-                    if not pcall(world.newItem, x) then
-                        host:setActionbar("Invalid item!")
-                        return
-                    end
-                    self.action:item(x)
-                    host:setActionbar("Set icon to " .. x)
-                else
-                    host:setActionbar("Cancelled")
+                if not pcall(world.newItem, x) then
+                    host:setActionbar("Invalid item!")
+                    return
                 end
+                self.action:item(x)
+                host:setActionbar("Set icon to " .. x)
             end
             host:setActionbar("Type the item ID for the new icon in chat, or 'stop' to cancel:")
         end)
@@ -414,33 +357,29 @@ function Marker:genMarkerPages()
                 return
             end
             chat_consumer = function(x)
-                if x ~= "stop" then
-                    -- TODO: figure out and handwrite a better blending algorithm so we can move 100% to pure setcolor
-                    if not vectors.hexToRGB(x) then
-                        host:setActionbar("Invalid color!")
-                        return
-                    end
-                    if self.model == nil then
-                        if x == "marker_blue" then
-                            pings.lm_setSpecialColor(x, self.id)
-                        elseif x == "marker_teal" then
-                            pings.lm_setSpecialColor(x, self.id)
-                        elseif x == "marker_red" then
-                            pings.lm_setSpecialColor(x, self.id)
-                        elseif x == "marker_green" then
-                            pings.lm_setSpecialColor(x, self.id)
-                        elseif x == "marker_white" then
-                            pings.lm_setSpecialColor(x, self.id)
-                        else
-                            pings.lm_setColor(x, self.id)
-                        end
-                    else
-                        pings.lm_setModelColor(x, self.id)
-                    end
-                    host:setActionbar("Set marker color to " .. x)
-                else
-                    host:setActionbar("Cancelled")
+                -- TODO: figure out and handwrite a better blending algorithm so we can move 100% to pure setcolor
+                if not vectors.hexToRGB(x) then
+                    host:setActionbar("Invalid color!")
+                    return
                 end
+                if self.model == nil then
+                    if x == "marker_blue" then
+                        pings.lm_setSpecialColor(x, self.id)
+                    elseif x == "marker_teal" then
+                        pings.lm_setSpecialColor(x, self.id)
+                    elseif x == "marker_red" then
+                        pings.lm_setSpecialColor(x, self.id)
+                    elseif x == "marker_green" then
+                        pings.lm_setSpecialColor(x, self.id)
+                    elseif x == "marker_white" then
+                        pings.lm_setSpecialColor(x, self.id)
+                    else
+                        pings.lm_setColor(x, self.id)
+                    end
+                else
+                    pings.lm_setModelColor(x, self.id)
+                end
+                host:setActionbar("Set marker color to " .. x)
             end
             host:setActionbar("Type the hex code of the color in chat, or 'stop' to cancel:")
         end)
@@ -469,17 +408,13 @@ function Marker:genMarkerPages()
         :item("wheat")
         :onLeftClick(function()
             chat_consumer = function(x)
-                if x ~= "stop" then
-                    local new_scale = tonumber(x)
-                    if not new_scale then
-                        host:setActionbar("Not a number!")
-                        return
-                    end
-                    pings.lm_setScale(new_scale, self.id)
-                    host:setActionbar("Set scale to " .. x)
-                else
-                    host:setActionbar("Cancelled")
+                local new_scale = tonumber(x)
+                if not new_scale then
+                    host:setActionbar("Not a number!")
+                    return
                 end
+                pings.lm_setScale(new_scale, self.id)
+                host:setActionbar("Set scale to " .. x)
             end
             host:setActionbar("Type the new scale (1 is default), or 'stop' to cancel:")
         end)
@@ -494,21 +429,13 @@ function Marker:genMarkerPages()
             if sneak_key:isPressed() then
                 -- NBT mode
                 chat_consumer = function(x)
-                    if x ~= "stop" then
-                        pings.lm_disguiseAsNBT(x, self.id)
-                    else
-                        host:setActionbar("Cancelled")
-                    end
+                    pings.lm_disguise(x, self.id, 0)
                 end
                 host:setActionbar("Type the new mob NBT in chat, 'disable' to disable disguise or 'stop' to cancel:")
             else
                 -- Mob ID mode
                 chat_consumer = function(x)
-                    if x ~= "stop" then
-                        pings.lm_disguiseAsMob(x, self.id)
-                    else
-                        host:setActionbar("Cancelled")
-                    end
+                    pings.lm_disguise(x, self.id, 1)
                 end
                 host:setActionbar("Type the new mob ID in chat, 'disable' to disable disguise or 'stop' to cancel:")
             end
@@ -518,11 +445,7 @@ function Marker:genMarkerPages()
         :item("blaze_spawn_egg")
         :onLeftClick(function()
             chat_consumer = function(x)
-                if x ~= "stop" then
-                    pings.lm_disguiseAsModel(x, self.id)
-                else
-                    host:setActionbar("Cancelled")
-                end
+                pings.lm_disguise(x, self.id, 2)
             end
             host:setActionbar("Type the model name in chat, 'disable' to disable disguise or 'stop' to cancel:")
         end)
@@ -531,17 +454,13 @@ function Marker:genMarkerPages()
         :item("wheat")
         :onLeftClick(function()
             chat_consumer = function(x)
-                if x ~= "stop" then
-                    local new_height = tonumber(x)
-                    if not new_height then
-                        host:setActionbar("Not a number!")
-                        return
-                    end
-                    pings.lm_setTextHeight(new_height, self.id)
-                    host:setActionbar("Set text height to " .. x)
-                else
-                    host:setActionbar("Cancelled")
+                local new_height = tonumber(x)
+                if not new_height then
+                    host:setActionbar("Not a number!")
+                    return
                 end
+                pings.lm_setTextHeight(new_height, self.id)
+                host:setActionbar("Set text height to " .. x)
             end
             host:setActionbar("Type the new text height (34 is default, 16 is one block), or 'stop' to cancel:")
         end)
@@ -550,17 +469,13 @@ function Marker:genMarkerPages()
         :item("compass")
         :onLeftClick(function()
             chat_consumer = function(x)
-                if x ~= "stop" then
-                    local new_rot = tonumber(x)
-                    if not new_rot then
-                        host:setActionbar("Not a number!")
-                        return
-                    end
-                    pings.lm_setRot(new_rot, self.id)
-                    host:setActionbar("Set rotation to " .. x)
-                else
-                    host:setActionbar("Cancelled")
+                local new_rot = tonumber(x)
+                if not new_rot then
+                    host:setActionbar("Not a number!")
+                    return
                 end
+                pings.lm_setRot(new_rot, self.id)
+                host:setActionbar("Set rotation to " .. x)
             end
             host:setActionbar("Type the new rotation or 'stop' to cancel:")
         end)
@@ -569,26 +484,22 @@ function Marker:genMarkerPages()
         :item("daylight_detector")
         :onLeftClick(function()
             chat_consumer = function(x)
-                if x ~= "stop" then
-                    if x == "disable" then
-                        pings.lm_setLight(nil, self.id)
-                        host:setActionbar("Light override disabled!")
-                        return
-                    end
-                    local new_light = tonumber(x)
-                    if not new_light then
-                        host:setActionbar("Not a number!")
-                        return
-                    end
-                    if new_light > 15 or new_light < 0 then
-                        host:setActionbar("Out of range! Valid values are 0-15.")
-                        return
-                    end
-                    pings.lm_setLight(new_light, self.id)
-                    host:setActionbar("Set light level to " .. x)
-                else
-                    host:setActionbar("Cancelled")
+                if x == "disable" then
+                    pings.lm_setLight(nil, self.id)
+                    host:setActionbar("Light override disabled!")
+                    return
                 end
+                local new_light = tonumber(x)
+                if not new_light then
+                    host:setActionbar("Not a number!")
+                    return
+                end
+                if new_light > 15 or new_light < 0 then
+                    host:setActionbar("Out of range! Valid values are 0-15.")
+                    return
+                end
+                pings.lm_setLight(new_light, self.id)
+                host:setActionbar("Set light level to " .. x)
             end
             host:setActionbar("Type the new light level (fullbright is 15), 'disable' to disable or 'stop' to cancel:")
         end)
@@ -633,7 +544,11 @@ end
 
 function events.chat_send_message(msg)
     if chat_consumer then
-        chat_consumer(msg)
+        if msg ~= "stop" then
+            chat_consumer(msg)
+        else
+            host:setActionbar("Cancelled")
+        end
         chat_consumer = nil
         return nil
     else
