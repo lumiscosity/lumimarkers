@@ -56,7 +56,7 @@ function Marker:new(pos, syncing)
         :moveTo(anchor)
         :setPos(pos)
         :setVisible(true)
-    newObject.static_anchor = models:newPart("EntityAnchor", "World"):setPos(pos)
+    newObject.static_anchor = models:newPart("EntityAnchor", "World"):setPos(pos):setLight(15)
     newObject.page = action_wheel:newPage("HolderPage")
 
     newObject.text_anchor = models:newPart("TextAnchor", "BILLBOARD"):setPivot(0, 34, 0):moveTo(newObject.marker)
@@ -91,10 +91,11 @@ function pings.lm_setName(name, id)
 end
 
 function lm_setSpecialColor(c, id)
-    ph.markers[id].marker:setColor()
-    ph.markers[id].marker:setPrimaryTexture("Custom", getTexture("lumimarkers.marker."..c))
-    ph.markers[id].spc = c
-    ph.markers[id].c = nil
+    local m = ph.markers[id]
+    m.marker:setColor()
+    m.marker:setPrimaryTexture("Custom", getTexture("lumimarkers.marker."..c))
+    m.spc = c
+    m.c = nil
 end
 
 function pings.lm_setSpecialColor(c, id)
@@ -104,10 +105,11 @@ function pings.lm_setSpecialColor(c, id)
 end
 
 function lm_setColor(c, id)
-    ph.markers[id].marker:setColor(vectors.hexToRGB(c))
-    ph.markers[id].marker:setPrimaryTexture("Custom", getTexture("lumimarkers.marker.marker_white"))
-    ph.markers[id].spc = nil
-    ph.markers[id].c = c
+    local m = ph.markers[id]
+    m.marker:setColor(vectors.hexToRGB(c))
+    m.marker:setPrimaryTexture("Custom", getTexture("lumimarkers.marker.marker_white"))
+    m.spc = nil
+    m.c = c
 end
 
 function pings.lm_setColor(c, id)
@@ -117,9 +119,10 @@ function pings.lm_setColor(c, id)
 end
 
 function lm_setModelColor(c, id)
-    ph.markers[id].model:setColor(vectors.hexToRGB(c))
-    ph.markers[id].spc = nil
-    ph.markers[id].c = c
+    local m = ph.markers[id]
+    m.model:setColor(vectors.hexToRGB(c))
+    m.spc = nil
+    m.c = c
 end
 
 function pings.lm_setModelColor(c, id)
@@ -129,11 +132,12 @@ function pings.lm_setModelColor(c, id)
 end
 
 function pings.lm_delete(id)
-    if ph.markers[id] then
-        ph.markers[id].removed = true
-        ph.markers[id].static_anchor:setVisible(false)
-        ph.markers[id].marker:setVisible(false)
-        ph.markers[id].marker:moveTo(models)
+    local m = ph.markers[id]
+    if m then
+        m.removed = true
+        m.static_anchor:setVisible(false)
+        m.marker:setVisible(false)
+        m.marker:moveTo(models)
         ph:remove()
         if chat_consumer then
             host:setActionbar("Cancelled")
@@ -143,15 +147,17 @@ function pings.lm_delete(id)
 end
 
 function pings.lm_move(pos, id)
-    if ph.markers[id] then
-        ph.markers[id].marker:setPos(pos)
-        ph.markers[id].static_anchor:setPos(pos)
+    local m = ph.markers[id]
+    if m then
+        m.marker:setPos(pos)
+        m.static_anchor:setPos(pos)
     end
 end
 
 function lm_setScale(scale, id)
-    ph.markers[id].marker:setScale(scale, scale, scale)
-    ph.markers[id].static_anchor:setScale(scale, scale, scale)
+    local m = ph.markers[id]
+    m.marker:setScale(scale, scale, scale)
+    m.static_anchor:setScale(scale, scale, scale)
 end
 
 function pings.lm_setScale(scale, id)
@@ -171,20 +177,37 @@ function pings.lm_setTextHeight(height, id)
 end
 
 function lm_setRot(rot, id)
-    ph.markers[id].marker:setRot(0, rot,0)
-    ph.markers[id].static_anchor:setRot(0, rot,0)
+    local m = ph.markers[id]
+    m.marker:setRot(0, rot, 0)
+    m.static_anchor:setRot(0, rot, 0)
 end
 
 function pings.lm_setRot(rot, id)
     if ph.markers[id] then
-        ph.markers[id].marker:setRot(0, rot,0)
-        ph.markers[id].static_anchor:setRot(0, rot,0)
+        lm_setRot(rot, id)
     end
 end
 
+function lm_disableDisguise(id)
+    local m = ph.markers[id]
+    m.marker:setVisible(true)
+    if m.entity then
+        m.entity:setVisible(false)
+    end
+    if m.model then
+        m.model:setVisible(false)
+    end
+    m.text_anchor:moveTo(m.marker)
+    m.entity = nil
+    m.model = nil
+    m.dis_type = nil
+    m.dis_cont = nil
+end
+
 function lm_disguiseAsNBT(x, id, silent)
+    local m = ph.markers[id]
     local success = pcall(function()
-        ph.markers[id].entity = ph.markers[id].static_anchor
+        m.entity = m.static_anchor
             :newEntity("MarkerMob")
             :setNbt(x)
     end)
@@ -195,24 +218,19 @@ function lm_disguiseAsNBT(x, id, silent)
             host:setActionbar("Invalid NBT!")
         end
     end
-    if ph.markers[id].model then
-        ph.markers[id].model:setVisible(false)
-        ph.markers[id].model = nil
+    if m.model then
+        m.model:setVisible(false)
+        m.model = nil
     end
     if (not success) or (x == "disable") then
-        ph.markers[id].marker:setVisible(true)
-        if ph.markers[id].entity then
-            ph.markers[id].entity:setVisible(false)
-        end
-        ph.markers[id].text_anchor:moveTo(ph.markers[id].marker)
-        ph.markers[id].entity = nil
+        lm_disableDisguise(id)
         return
     end
-    ph.markers[id].marker:setVisible(false)
-    ph.markers[id].entity:setVisible(true)
-    ph.markers[id].text_anchor:moveTo(ph.markers[id].static_anchor)
-    ph.markers[id].dis_type = 0
-    ph.markers[id].dis_cont = x
+    m.marker:setVisible(false)
+    m.entity:setVisible(true)
+    m.text_anchor:moveTo(m.static_anchor)
+    m.dis_type = 0
+    m.dis_cont = x
     if not silent then
         host:setActionbar("Disguised as mob")
     end
@@ -225,8 +243,9 @@ function pings.lm_disguiseAsNBT(x, id)
 end
 
 function lm_disguiseAsMob(x, id, silent)
+    local m = ph.markers[id]
     local success = pcall(function()
-        ph.markers[id].entity = ph.markers[id].static_anchor
+        m.entity = m.static_anchor
             :newEntity("MarkerMob")
             :setNbt('{id:"'..x..'"}')
     end)
@@ -238,24 +257,19 @@ function lm_disguiseAsMob(x, id, silent)
             host:setActionbar("Invalid mob!")
         end
     end
-    if ph.markers[id].model then
-        ph.markers[id].model:setVisible(false)
-        ph.markers[id].model = nil
+    if m.model then
+        m.model:setVisible(false)
+        m.model = nil
     end
     if (not success) or (x == "disable") then
-        ph.markers[id].marker:setVisible(true)
-        if ph.markers[id].entity then
-            ph.markers[id].entity:setVisible(false)
-        end
-        ph.markers[id].text_anchor:moveTo(ph.markers[id].marker)
-        ph.markers[id].entity = nil
+        lm_disableDisguise(id)
         return
     end
-    ph.markers[id].marker:setVisible(false)
-    ph.markers[id].entity:setVisible(true)
-    ph.markers[id].text_anchor:moveTo(ph.markers[id].static_anchor)
-    ph.markers[id].dis_type = 1
-    ph.markers[id].dis_cont = x
+    m.marker:setVisible(false)
+    m.entity:setVisible(true)
+    m.text_anchor:moveTo(m.static_anchor)
+    m.dis_type = 1
+    m.dis_cont = x
     if not silent then
         host:setActionbar("Disguised as mob " .. x)
     end
@@ -268,9 +282,10 @@ function pings.lm_disguiseAsMob(x, id)
 end
 
 function lm_disguiseAsModel(x, id, silent)
+    local m = ph.markers[id]
     local success = pcall(function()
-        ph.markers[id].model = models.lumimarkers.custom[x]:copy("MarkerDisguise")
-            :moveTo(ph.markers[id].static_anchor)
+        m.model = models.lumimarkers.custom[x]:copy("MarkerDisguise")
+            :moveTo(m.static_anchor)
             :setVisible(true)
     end)
     if not silent then
@@ -280,24 +295,19 @@ function lm_disguiseAsModel(x, id, silent)
             host:setActionbar("Invalid model!")
         end
     end
-    if ph.markers[id].entity then
-        ph.markers[id].entity:setVisible(false)
-        ph.markers[id].entity = nil
+    if m.entity then
+        m.entity:setVisible(false)
+        m.entity = nil
     end
     if (not success) or (x == "disable") then
-        ph.markers[id].marker:setVisible(true)
-        if ph.markers[id].model then
-            ph.markers[id].model:setVisible(false)
-        end
-        ph.markers[id].text_anchor:moveTo(ph.markers[id].marker)
-        ph.markers[id].model = nil
+        lm_disableDisguise(id)
         return
     end
-    ph.markers[id].marker:setVisible(false)
-    ph.markers[id].model:setVisible(true)
-    ph.markers[id].text_anchor:moveTo(ph.markers[id].static_anchor)
-    ph.markers[id].dis_type = 2
-    ph.markers[id].dis_cont = x
+    m.marker:setVisible(false)
+    m.model:setVisible(true)
+    m.text_anchor:moveTo(m.static_anchor)
+    m.dis_type = 2
+    m.dis_cont = x
     if not silent then
         host:setActionbar("Disguised as model " .. x)
     end
