@@ -58,6 +58,7 @@ function events.tick()
             m.marker:getScale()[2],
             m.text_anchor:getPivot()[2],
             m.marker:getRot()[2],
+            m.marker:getLight(),
             m.dis_type,
             m.dis_cont,
             m.id

@@ -40,12 +40,15 @@ function PageHolder:insert(marker)
     PageHolder.markers[next_id] = marker
 end
 
+---Adds the given marker to the PageHolder at the specified ID.
+---@param marker Marker
+---@param id number
 function PageHolder.sync(marker, id)
     marker.id = id
     PageHolder.markers[id] = marker
 end
 
----Removes markers queued for deletion.
+---Removes all markers queued for deletion.
 function PageHolder:remove()
     PageHolder:reset()
     action_wheel:setPage(PageHolder.page)

@@ -188,6 +188,18 @@ function pings.lm_setRot(rot, id)
     end
 end
 
+function lm_setLight(light, id)
+    local m = ph.markers[id]
+    m.marker:setLight(light)
+    m.static_anchor:setLight(light)
+end
+
+function pings.lm_setLight(light, id)
+    if ph.markers[id] then
+        lm_setLight(light, id)
+    end
+end
+
 function lm_disableDisguise(id)
     local m = ph.markers[id]
     m.marker:setVisible(true)
@@ -319,7 +331,7 @@ function pings.lm_disguiseAsModel(x, id)
     end
 end
 
-function pings.lm_reconstruct(name, c, spc, pos, scale, height, rot, disguise_type, dis_cont, id)
+function pings.lm_reconstruct(name, c, spc, pos, scale, height, rot, light, disguise_type, dis_cont, id)
     if not ph.markers[id] then
         marker = Marker:new(pos, true)
         ph.sync(marker, id)
@@ -338,6 +350,7 @@ function pings.lm_reconstruct(name, c, spc, pos, scale, height, rot, disguise_ty
     lm_setScale(scale, id)
     lm_setTextHeight(height, id)
     lm_setRot(rot, id)
+    lm_setLight(light, id)
     if disguise_type == 0 then
         lm_disguiseAsNBT(dis_cont, id, 1)
     elseif disguise_type == 1 then
@@ -517,21 +530,21 @@ function Marker:genMarkerPages()
         :title("Set text height")
         :item("wheat")
         :onLeftClick(function()
-        chat_consumer = function(x)
-        if x ~= "stop" then
-            local new_height = tonumber(x)
-            if not new_height then
-                host:setActionbar("Not a number!")
-                return
-                end
-                pings.lm_setTextHeight(new_height, self.id)
-                host:setActionbar("Set text height to " .. x)
+            chat_consumer = function(x)
+                if x ~= "stop" then
+                    local new_height = tonumber(x)
+                    if not new_height then
+                        host:setActionbar("Not a number!")
+                        return
+                    end
+                    pings.lm_setTextHeight(new_height, self.id)
+                    host:setActionbar("Set text height to " .. x)
                 else
                     host:setActionbar("Cancelled")
-                    end
-                    end
-                    host:setActionbar("Type the new text height (34 is default, 16 is one block), or 'stop' to cancel:")
-                    end)
+                end
+            end
+            host:setActionbar("Type the new text height (34 is default, 16 is one block), or 'stop' to cancel:")
+        end)
     self.page:newAction()
         :title("Rotate")
         :item("compass")
@@ -550,6 +563,34 @@ function Marker:genMarkerPages()
                 end
             end
             host:setActionbar("Type the new rotation or 'stop' to cancel:")
+        end)
+    self.page:newAction()
+        :title("Set light level")
+        :item("daylight_detector")
+        :onLeftClick(function()
+            chat_consumer = function(x)
+                if x ~= "stop" then
+                    if x == "disable" then
+                        pings.lm_setLight(nil, self.id)
+                        host:setActionbar("Light override disabled!")
+                        return
+                    end
+                    local new_light = tonumber(x)
+                    if not new_light then
+                        host:setActionbar("Not a number!")
+                        return
+                    end
+                    if new_light > 15 or new_light < 0 then
+                        host:setActionbar("Out of range! Valid values are 0-15.")
+                        return
+                    end
+                    pings.lm_setLight(new_light, self.id)
+                    host:setActionbar("Set light level to " .. x)
+                else
+                    host:setActionbar("Cancelled")
+                end
+            end
+            host:setActionbar("Type the new light level (fullbright is 15), 'disable' to disable or 'stop' to cancel:")
         end)
 end
 
