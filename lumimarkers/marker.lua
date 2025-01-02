@@ -475,7 +475,7 @@ function Marker:genMarkerPages()
                     return
                 end
                 pings.lm_setRot(new_rot, self.id)
-                host:setActionbar("Set rotation to " .. x)
+                host:setActionbar("Set rotation to "..x.."°")
             end
             host:setActionbar("Type the new rotation or 'stop' to cancel:")
         end)
