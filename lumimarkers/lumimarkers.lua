@@ -45,7 +45,6 @@ function events.tick()
         local m = lm_queue[#lm_queue]
         if m.removed then
             lm_queue = constructSyncQueue()
-            ph.reset()
             return
         end
         --log("syncing marker at id "..#lm_queue)
