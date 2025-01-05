@@ -2,7 +2,7 @@
 
 **lumiMarkers** is a drop-in Figura script which adds placeable markers. Markers can be customized using an Action Wheel powered menu.
 
-lumiMarkers requires the `Render Offscreen` permission to work correctly.
+lumiMarkers requires the `Render Offscreen` permission to be given to the user placing the markers to work correctly.
 
 ---
 
