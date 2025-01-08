@@ -73,8 +73,14 @@ function Marker:new(pos, syncing)
 end
 
 local function getTexture(name)
+    local n = ""
+    if (client:compareVersions(client.getVersion(), "1.18.2") < 1) then
+        n = "lumimarkers."..name
+    else
+        n = "lumimarkers.marker."..name
+    end
     for _, v in pairs(textures:getTextures()) do
-        if v.name == name then
+        if v.name == n then
             return v
         end
     end
@@ -93,7 +99,7 @@ end
 function lm_setSpecialColor(c, id)
     local m = ph.markers[id]
     m.marker:setColor()
-    m.marker:setPrimaryTexture("Custom", getTexture("lumimarkers.marker."..c))
+    m.marker:setPrimaryTexture("Custom", getTexture(c))
     m.spc = c
     m.c = nil
 end
