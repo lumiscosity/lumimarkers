@@ -32,6 +32,8 @@ local Marker = {
     entity = nil,
     -- The ModelPart used to disguise this marker as a model. If model mode is disabled, this is nil.
     model = nil,
+    -- A name used to differentiate this part from others.
+    model_name = nil,
     -- A ModelPart placed at the raw position of a marker, used to anchor the entity.
     static_anchor = nil,
     -- Color, nil if none.
@@ -209,6 +211,7 @@ end
 function lm_disguise(x, id, dis_type, silent)
     local m = ph.markers[id]
     local success = nil
+    if not dis_type then return end
     if dis_type == 0 then
         success = pcall(function()
             m.entity = m.static_anchor
@@ -222,10 +225,17 @@ function lm_disguise(x, id, dis_type, silent)
                 :setNbt('{id:"'..x..'"}')
         end)
     else
+        if m.model and (x == m.model_name) then return end
         success = pcall(function()
+            if m.model then
+                m.static_anchor.MarkerDisguise:setVisible(false)
+                m.model:setVisible(false)
+                m.model = nil
+            end
             m.model = models.lumimarkers.custom[x]:copy("MarkerDisguise")
                 :moveTo(m.static_anchor)
                 :setVisible(true)
+            m.model_name = x
         end)
     end
     if not silent then
@@ -250,6 +260,7 @@ function lm_disguise(x, id, dis_type, silent)
         end
     else
         if m.model then
+            m.static_anchor.MarkerDisguise:setVisible(false)
             m.model:setVisible(false)
             m.model = nil
         end
@@ -271,7 +282,6 @@ function lm_disguise(x, id, dis_type, silent)
         return
     end
     m.marker:setVisible(false)
-    m.entity:setVisible(true)
     m.text_anchor:moveTo(m.static_anchor)
     m.dis_type = dis_type
     m.dis_cont = x
