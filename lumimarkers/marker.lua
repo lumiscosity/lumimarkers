@@ -76,10 +76,10 @@ end
 
 local function getTexture(name)
     local n = ""
-    if (client:compareVersions(client.getVersion(), "1.18.2") < 1) then
-        n = "lumimarkers."..name
-    else
+    if (client:compareVersions(client.getFiguraVersion(), "0.1.5") == -1) then
         n = "lumimarkers.marker."..name
+    else
+        n = "lumimarkers."..name
     end
     for _, v in pairs(textures:getTextures()) do
         if v.name == n then
@@ -115,7 +115,7 @@ end
 function lm_setColor(c, id)
     local m = ph.markers[id]
     m.marker:setColor(vectors.hexToRGB(c))
-    m.marker:setPrimaryTexture("Custom", getTexture("lumimarkers.marker.marker_white"))
+    m.marker:setPrimaryTexture("Custom", getTexture("marker_white"))
     m.spc = nil
     m.c = c
 end

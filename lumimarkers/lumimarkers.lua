@@ -3,7 +3,7 @@
 --  ||    || || || \/ || || || \/ || ||=|| ||_// ||<<  ||==  ||_//  \\
 --  ||__| \\_// ||    || || ||    || || || || \\ || \\ ||___ || \\ \_))
 --
---  v1.0.2 - made by lumiscosity
+--  v1.0.3 - made by lumiscosity
 --  See https://github.com/lumiscosity/lumimarkers for details!
 --
 
