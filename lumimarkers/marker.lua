@@ -13,8 +13,6 @@ end
 
 ---A class describing a marker.
 ---@class Marker
----@field publicProperty1 ModelPart
----@field publicProperty2 Page
 local Marker = {
     -- The position of this marker in the PageHolder.
     id = nil,
@@ -52,26 +50,26 @@ local Marker = {
 ---@param pos Vector3
 ---@return Marker
 function Marker:new(pos, syncing)
-    local newObject = setmetatable({}, self)
+    local n = setmetatable({}, self)
     self.__index = self
-    newObject.marker = marker_base:copy("MarkerModel")
+    n.marker = marker_base:copy("MarkerModel")
         :moveTo(anchor)
         :setPos(pos)
         :setVisible(true)
-    newObject.static_anchor = models:newPart("EntityAnchor", "World"):setPos(pos):setLight(15)
-    newObject.page = action_wheel:newPage("HolderPage")
+    n.static_anchor = models:newPart("EntityAnchor", "World"):setPos(pos):setLight(15)
+    n.page = action_wheel:newPage("HolderPage")
 
-    newObject.text_anchor = models:newPart("TextAnchor", "BILLBOARD"):setPivot(0, 34, 0):moveTo(newObject.marker)
-    newObject.text = newObject.text_anchor:newText("MarkerText"):setText("Marker"):setAlignment("CENTER"):setScale(0.5, 0.5, 0.5)--:setBackground(true) Uncomment this when the Iris texture atlas corruption bug is fixed!
-    newObject.removed = false
+    n.text_anchor = models:newPart("TextAnchor", "BILLBOARD"):setPivot(0, 34, 0):moveTo(n.marker)
+    n.text = n.text_anchor:newText("MarkerText"):setText("Marker"):setAlignment("CENTER"):setScale(0.5, 0.5, 0.5):setBackground(true)
+    n.removed = false
     if not syncing then
-        newObject.action = ph.page:newAction()
+        n.action = ph.page:newAction()
             :title("Marker")
             :item("snowball")
-            :onLeftClick(function() action_wheel:setPage(newObject.page) end)
-        newObject:genPage()
+            :onLeftClick(function() action_wheel:setPage(n.page) end)
+        n:genPage()
     end
-    return newObject
+    return n
 end
 
 local function getTexture(name)
@@ -126,29 +124,6 @@ end
 
 function pings.lm_setModelColor(c, id)
     pcall(Marker.setModelColor, ph.markers[id], c)
-end
-
-function pings.lm_delete(id)
-    local m = ph.markers[id]
-    if m then
-        m.removed = true
-        m.static_anchor:setVisible(false)
-        m.marker:setVisible(false)
-        m.marker:moveTo(models)
-        ph:remove()
-        if chat_consumer then
-            host:setActionbar("Cancelled")
-            chat_consumer = nil
-        end
-    end
-end
-
-function pings.lm_move(pos, id)
-    local m = ph.markers[id]
-    if m then
-        m.marker:setPos(pos)
-        m.static_anchor:setPos(pos)
-    end
 end
 
 function Marker:setScale(scale)
@@ -278,6 +253,29 @@ end
 
 function pings.lm_disguise(x, id, dis_type)
     pcall(Marker.setTextHeight, ph.markers[id], x, dis_type)
+end
+
+function pings.lm_delete(id)
+    local m = ph.markers[id]
+    if m then
+        m.removed = true
+        m.static_anchor:setVisible(false)
+        m.marker:setVisible(false)
+        m.marker:moveTo(models)
+        ph:remove()
+        if chat_consumer then
+            host:setActionbar("Cancelled")
+            chat_consumer = nil
+        end
+    end
+end
+
+function pings.lm_move(pos, id)
+    local m = ph.markers[id]
+    if m then
+        m.marker:setPos(pos)
+        m.static_anchor:setPos(pos)
+    end
 end
 
 function pings.lm_reconstruct(name, c, spc, pos, scale, height, rot, light, dis_type, dis_cont, id)
