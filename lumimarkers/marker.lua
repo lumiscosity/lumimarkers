@@ -88,55 +88,44 @@ local function getTexture(name)
     end
 end
 
-function lm_setName(name, id)
-    ph.markers[id].text:setText(name)
+function Marker:setName(name)
+    self.text:setText(name)
 end
 
 function pings.lm_setName(name, id)
-    if ph.markers[id] then
-        lm_setName(name, id)
-    end
+    pcall(Marker.setName, ph.markers[id], name)
 end
 
-function lm_setSpecialColor(c, id)
-    local m = ph.markers[id]
-    m.marker:setColor()
-    m.marker:setPrimaryTexture("Custom", getTexture(c))
-    m.spc = c
-    m.c = nil
+function Marker:setSpecialColor(c)
+    self.marker:setColor()
+    self.marker:setPrimaryTexture("Custom", getTexture(c))
+    self.spc = c
+    self.c = nil
 end
 
 function pings.lm_setSpecialColor(c, id)
-    if ph.markers[id] then
-        lm_setSpecialColor(c, id)
-    end
+    pcall(Marker.setSpecialColor, ph.markers[id], c)
 end
 
-function lm_setColor(c, id)
-    local m = ph.markers[id]
-    m.marker:setColor(vectors.hexToRGB(c))
-    m.marker:setPrimaryTexture("Custom", getTexture("marker_white"))
-    m.spc = nil
-    m.c = c
+function Marker:setColor(c)
+    self.marker:setColor(vectors.hexToRGB(c))
+    self.marker:setPrimaryTexture("Custom", getTexture("marker_white"))
+    self.spc = nil
+    self.c = c
 end
 
 function pings.lm_setColor(c, id)
-    if ph.markers[id] then
-        lm_setColor(c, id)
-    end
+    pcall(Marker.setColor, ph.markers[id], c)
 end
 
-function lm_setModelColor(c, id)
-    local m = ph.markers[id]
-    m.model:setColor(vectors.hexToRGB(c))
-    m.spc = nil
-    m.c = c
+function Marker:setModelColor(c)
+    self.model:setColor(vectors.hexToRGB(c))
+    self.spc = nil
+    self.c = c
 end
 
 function pings.lm_setModelColor(c, id)
-    if ph.markers[id] then
-        lm_setModelColor(c, id)
-    end
+    pcall(Marker.setModelColor, ph.markers[id], c)
 end
 
 function pings.lm_delete(id)
@@ -162,54 +151,43 @@ function pings.lm_move(pos, id)
     end
 end
 
-function lm_setScale(scale, id)
-    local m = ph.markers[id]
-    m.marker:setScale(scale, scale, scale)
-    m.static_anchor:setScale(scale, scale, scale)
+function Marker:setScale(scale)
+    self.marker:setScale(scale, scale, scale)
+    self.static_anchor:setScale(scale, scale, scale)
 end
 
 function pings.lm_setScale(scale, id)
-    if ph.markers[id] then
-        lm_setScale(scale, id)
-    end
+    pcall(Marker.setScale, ph.markers[id], scale)
 end
 
-function lm_setTextHeight(height, id)
-    ph.markers[id].text_anchor:setPivot(0, height, 0)
+function Marker:setTextHeight(height)
+    self.text_anchor:setPivot(0, height, 0)
 end
 
 function pings.lm_setTextHeight(height, id)
-    if ph.markers[id] then
-        lm_setTextHeight(height, id)
-    end
+    pcall(Marker.setTextHeight, ph.markers[id], height)
 end
 
-function lm_setRot(rot, id)
-    local m = ph.markers[id]
-    m.marker:setRot(0, rot, 0)
-    m.static_anchor:setRot(0, rot, 0)
+function Marker:setRot(rot)
+    self.marker:setRot(0, rot, 0)
+    self.static_anchor:setRot(0, rot, 0)
 end
 
 function pings.lm_setRot(rot, id)
-    if ph.markers[id] then
-        lm_setRot(rot, id)
-    end
+    pcall(Marker.setRot, ph.markers[id], rot)
 end
 
-function lm_setLight(light, id)
-    local m = ph.markers[id]
-    m.marker:setLight(light)
-    m.static_anchor:setLight(light)
+function Marker:setLight(light)
+    self.marker:setLight(light)
+    self.static_anchor:setLight(light)
 end
 
 function pings.lm_setLight(light, id)
-    if ph.markers[id] then
-        lm_setLight(light, id)
-    end
+    pcall(Marker.setLight, ph.markers[id], light)
 end
 
-function lm_disguise(x, id, dis_type, silent)
-    local m = ph.markers[id]
+function Marker:disguise(x, dis_type, silent)
+    local m = self
     local success = nil
     if not dis_type then return end
     if dis_type == 0 then
@@ -299,15 +277,16 @@ function lm_disguise(x, id, dis_type, silent)
 end
 
 function pings.lm_disguise(x, id, dis_type)
-    if ph.markers[id] then
-        lm_disguise(x, id, dis_type)
-    end
+    pcall(Marker.setTextHeight, ph.markers[id], x, dis_type)
 end
 
 function pings.lm_reconstruct(name, c, spc, pos, scale, height, rot, light, dis_type, dis_cont, id)
+
     if not ph.markers[id] then
         marker = Marker:new(pos, true)
         ph.sync(marker, id)
+    else
+        marker = ph.markers[id]
     end
 
     if spc then
@@ -319,12 +298,12 @@ function pings.lm_reconstruct(name, c, spc, pos, scale, height, rot, light, dis_
             lm_setColor(c, id)
         end
     end
-    lm_setName(name, id)
-    lm_setScale(scale, id)
-    lm_setTextHeight(height, id)
-    lm_setRot(rot, id)
-    lm_setLight(light, id)
-    lm_disguise(dis_cont, id, dis_type, 1)
+    marker:setName(name)
+    marker:setScale(scale)
+    marker:setTextHeight(height)
+    marker:setRot(rot)
+    marker:setLight(light)
+    marker:disguise(dis_cont, dis_type, 1)
 end
 
 function Marker:genMarkerPages()

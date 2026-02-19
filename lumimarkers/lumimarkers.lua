@@ -3,7 +3,8 @@
 --  ||    || || || \/ || || || \/ || ||=|| ||_// ||<<  ||==  ||_//  \\
 --  ||__| \\_// ||    || || ||    || || || || \\ || \\ ||___ || \\ \_))
 --
---  v1.0.3 - made by lumiscosity
+--  v2.0.0 - made by lumiscosity
+--  Action Bar variant
 --  See https://github.com/lumiscosity/lumimarkers for details!
 --
 
