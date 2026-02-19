@@ -69,7 +69,7 @@ function Marker:new(pos, syncing)
             :title("Marker")
             :item("snowball")
             :onLeftClick(function() action_wheel:setPage(newObject.page) end)
-        newObject:genMarkerPages()
+        newObject:genPage()
     end
     return newObject
 end
@@ -290,12 +290,12 @@ function pings.lm_reconstruct(name, c, spc, pos, scale, height, rot, light, dis_
     end
 
     if spc then
-        lm_setSpecialColor(spc, id)
+        marker:setSpecialColor(spc)
     elseif c then
         if disguise_type == 2 then
-            lm_setModelColor(c, id)
+            marker:setModelColor(c)
         else
-            lm_setColor(c, id)
+            marker:setColor(c)
         end
     end
     marker:setName(name)
@@ -306,7 +306,7 @@ function pings.lm_reconstruct(name, c, spc, pos, scale, height, rot, light, dis_
     marker:disguise(dis_cont, dis_type, 1)
 end
 
-function Marker:genMarkerPages()
+function Marker:genPage()
     self.page:newAction()
         :title("Back")
         :item("amethyst_cluster")
