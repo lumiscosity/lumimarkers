@@ -3,8 +3,13 @@ local ins = table.insert
 
 local shaderListener = not client.hasShaderPack()
 
-local aanchor = models.zanchor.World
-animations.zanchor.a:play()
+local tanchor = models:newPart("lm_tanchor", "World")
+local aanchor = models.lumimarkers.zanchor.World
+
+logTable(animations.zanchor)
+animations["lumimarkers.zanchor"].a:play()
+
+models.lumimarkers.ztarget:setVisible(false):setOpacity(0.1):setPrimaryRenderType("emissive"):setLight(15, 15)
 
 local taskIDOffset = 0
 
@@ -23,7 +28,7 @@ local Zone = {
 
 function Zone.renderType()
     if shaderListener then
-        return "cutout_emissive_solid"
+        return "translucent"
     else
         return "emissive"
     end
@@ -31,13 +36,12 @@ end
 
 function Zone.animRenderType()
     if shaderListener then
-        return "translucent"
+        return "blurry"
     else
         return "emissive"
     end
 end
 
---- A horrific and probably poorly optimized mess.
 function Zone:spawnZoneVisuals()
     local xw = self.xw
     local zw = self.zw
@@ -131,6 +135,7 @@ function Zone:spawnZoneVisuals()
         lhp = hp
         ::continue::
     end
+    taskIDOffset = (taskIDOffset + mult + 16) % 65536
     return self
 end
 
@@ -184,41 +189,141 @@ end
 
 local zones = {}
 
-table.insert(zones, Zone:new(vec(192, 0, 0), 16, 16, vec(1.0, 0.5, 0.1, 0.35), true))
-
-function events.render()
-    local r = Zone.renderType()
-    local ar = Zone.animRenderType()
-    for _, i in pairs(zones) do
-        if shaderListener ~= client.hasShaderPack() then
-            for _, j in pairs(i.a) do
-                j:setRenderType(r)
-            end
-            for _, j in pairs(i.b) do
-                j:setRenderType(ar)
-            end
-            shaderListener = client.hasShaderPack()
-        end
-        for _, j in pairs(i.b) do
-            j:setColor(0.8, 0.8, 0.9, zoneAnimTimer)
-        end
-    end
-end
+table.insert(zones, Zone:new(vec(0, 0, 0), 16, 16, vec(1.0, 0.5, 0.1, 0.35), true, true))
 
 local targets = {}
 
-function events.tick()
-    zoneAnimTimer = math.max(zoneAnimTimer - 0.008, 0)
-    if not host:isHost() then
-        return
-    end
-    targets = {}
-    for _, i in pairs(zones) do
-        if i.targetPlayers then
-            ins(targets, i:getTargetPlayers())
-        end
-        --if i.targetMarkers then
-        --    ins(targets, i:getTargetMarkers())
-        --end
-    end
+local Target = {
+    -- true for player, false for marker
+    kind = nil,
+    -- uuid of player/marker
+    target = nil,
+    lastpos = nil,
+    model = nil
+}
+
+function Target:new(pos, kind, target)
+    local n = setmetatable({}, self)
+    self.__index = self
+    n.kind = kind
+    n.target = target
+    n.lastpos = pos
+    n.model = models.lumimarkers.ztarget:copy("lm_ztarget"):setPos(pos):setVisible(true):moveTo(tanchor)
+    n.lifetime = 0.1
+    return n
 end
+
+local function smoothMove(id, part, opos, npos)
+    local curtime = 0
+
+    events.tick:remove(id)
+    events.world_render:remove(id)
+
+    events.tick:register(function()
+        if curtime == 1 then
+            if part then
+                part:setPos(npos)
+            end
+            events.tick:remove(id)
+            events.world_render:remove(id)
+        end
+        curtime = curtime + 1
+    end, id)
+
+    local lerp = math.lerp
+
+    events.world_render:register(function(delta)
+        part:setPos(lerp(opos, npos, delta))
+    end, id)
+end
+
+local function ncontains(t, val)
+    for k, v in pairs(t) do
+        if v == val then
+            return false
+        end
+    end
+
+    return true
+end
+
+local spinAnimTimer = 0
+
+events.tick:register(
+    function()
+        spinAnimTimer = (spinAnimTimer + 0.3) % 360
+        zoneAnimTimer = math.max(zoneAnimTimer - 0.008, 0)
+        if not host:isHost() then
+            return
+        end
+        -- find targetted players/markers
+        local ft = {}
+        local min = math.min
+        for _, i in pairs(zones) do
+            if i.targetPlayers then
+                local f = i:getTargetPlayers()
+                for _, pl in pairs(f) do
+                    local u = pl:getUUID()
+                    local t = targets[u]
+                    if t then
+                        local up = pl:getPos()*16
+                        t.lifetime = min(t.lifetime + 0.1, 1)
+                        smoothMove("lm_zt_"..u, t.model, t.lastpos, up)
+                        t.lastpos = up
+                    else
+                        targets[u] = Target:new(pl:getPos()*16, true, u)
+                    end
+                    ins(ft, u)
+                end
+            end
+            --if i.targetMarkers then
+            --    ...
+            --end
+        end
+        -- clean up unused target markers
+        for k, v in pairs(targets) do
+            if ncontains(ft, k) then
+                if v.lifetime > 0.1 then
+                    local ent = world.getEntity(k)
+                    -- this can happen when exiting freecam
+                    if not ent then
+                        return
+                    end
+                    local up = ent:getPos()*16
+                    v.lifetime = v.lifetime - 0.1
+                    smoothMove("lm_zt_"..k, v.model, v.lastpos, up)
+                    v.lastpos = up
+                else
+                    v.model:setVisible(false)
+                    v.model:remove()
+                    targets[k] = nil
+                end
+            end
+        end
+    end
+, "lm_ztick")
+
+events.render:register(
+    function(delta)
+        local r = Zone.renderType()
+        local ar = Zone.animRenderType()
+        for _, i in pairs(zones) do
+            if shaderListener ~= client.hasShaderPack() then
+                for _, j in pairs(i.a) do
+                    j:setRenderType(r)
+                end
+                for _, j in pairs(i.b) do
+                    j:setRenderType(ar)
+                end
+                shaderListener = client.hasShaderPack()
+            end
+            for _, j in pairs(i.b) do
+                j:setColor(0.8, 0.8, 0.9, zoneAnimTimer)
+            end
+        end
+        for _, i in pairs(targets) do
+            i.model:setOpacity(i.lifetime)
+            i.model:setRot(0, spinAnimTimer + delta*0.3, 0)
+        end
+    end
+, "lm_zrender")
