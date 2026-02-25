@@ -6,22 +6,30 @@ local shaderListener = not client.hasShaderPack()
 local tanchor = models:newPart("lm_tanchor", "World")
 local aanchor = models.lumimarkers.zanchor.World
 
-logTable(animations.zanchor)
 animations["lumimarkers.zanchor"].a:play()
 
 models.lumimarkers.ztarget:setVisible(false):setOpacity(0.1):setPrimaryRenderType("emissive"):setLight(15, 15)
 
 local taskIDOffset = 0
 
+---A zone highlighted on the ground.
+---@class Zone
 local Zone = {
+    -- Anchor models used to position the zone.
     anchor = nil,
     aanchor = nil,
+    -- The width of the zone in the X and Z coordinates.
     xw = nil,
     zw = nil,
+    -- The color of the zone.
     color = nil,
+    -- Whether the cone is circular or not.
     round = nil,
+    -- Whetver the zone targets players.
     targetPlayers = nil,
+    -- Whetver the zone targets markers.
     targetMarkers = nil,
+    -- Internal holders for the SpriteTasks that make up a zone.
     a = nil,
     b = nil
 }
@@ -189,7 +197,7 @@ end
 
 local zones = {}
 
-table.insert(zones, Zone:new(vec(0, 0, 0), 16, 16, vec(1.0, 0.5, 0.1, 0.35), true, true))
+--table.insert(zones, Zone:new(vec(0, 0, 0), 16, 16, vec(1.0, 0.5, 0.1, 0.35), true, true))
 
 local targets = {}
 

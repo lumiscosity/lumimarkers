@@ -14,7 +14,7 @@ ph = require "lumimarkers/pageholder"
 function pings.lm_spawnMarkerAtRaycast()
     local pos = Marker.positionFromRaycast()
     if Marker.positionIsFree(pos) then
-        ph:insert(Marker:new(pos))
+        ph:insertMarker(Marker:new(pos))
     end
 end
 
@@ -69,4 +69,4 @@ function events.tick()
 end
 
 ph:reset()
-action_wheel:setPage(ph.page)
+action_wheel:setPage(ph.markerPage)

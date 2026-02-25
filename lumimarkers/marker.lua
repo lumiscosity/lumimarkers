@@ -11,7 +11,7 @@ if models.lumimarkers.custom then
     end
 end
 
----A class describing a marker.
+---A placeable, customizable marker.
 ---@class Marker
 local Marker = {
     -- The position of this marker in the PageHolder.
@@ -19,9 +19,9 @@ local Marker = {
     -- The marker model.
     marker = nil,
     -- The action used to represent this marker. The title of this action is the marker's name.
-    action = nil,
+    -- action = nil,
     -- The configuration page for this marker.
-    page = nil,
+    -- page = nil,
     -- The TextTask used to display this marker's name.
     text = nil,
     -- A ModelPart with the Billboard parent type which holds the text.
@@ -62,13 +62,6 @@ function Marker:new(pos, syncing)
     n.text_anchor = models:newPart("TextAnchor", "BILLBOARD"):setPivot(0, 34, 0):moveTo(n.marker)
     n.text = n.text_anchor:newText("MarkerText"):setText("Marker"):setAlignment("CENTER"):setScale(0.5, 0.5, 0.5):setBackground(true)
     n.removed = false
-    if not syncing then
-        n.action = ph.page:newAction()
-            :title("Marker")
-            :item("snowball")
-            :onLeftClick(function() action_wheel:setPage(n.page) end)
-        n:genPage()
-    end
     return n
 end
 
@@ -262,7 +255,7 @@ function pings.lm_delete(id)
         m.static_anchor:setVisible(false)
         m.marker:setVisible(false)
         m.marker:moveTo(models)
-        ph:remove()
+        ph:gc()
         if chat_consumer then
             host:setActionbar("Cancelled")
             chat_consumer = nil
@@ -279,10 +272,9 @@ function pings.lm_move(pos, id)
 end
 
 function pings.lm_reconstruct(name, c, spc, pos, scale, height, rot, light, dis_type, dis_cont, id)
-
     if not ph.markers[id] then
         marker = Marker:new(pos, true)
-        ph.sync(marker, id)
+        ph.syncMarker(marker, id)
     else
         marker = ph.markers[id]
     end
@@ -302,200 +294,6 @@ function pings.lm_reconstruct(name, c, spc, pos, scale, height, rot, light, dis_
     marker:setRot(rot)
     marker:setLight(light)
     marker:disguise(dis_cont, dis_type, 1)
-end
-
-function Marker:genPage()
-    self.page:newAction()
-        :title("Back")
-        :item("amethyst_cluster")
-        :onLeftClick(function()
-            action_wheel:setPage(ph.page)
-            if chat_consumer then
-                host:setActionbar("Cancelled")
-                chat_consumer = nil
-            end
-        end)
-    self.page:newAction()
-        :title("Rename")
-        :item("name_tag")
-        :onLeftClick(function()
-            chat_consumer = function(x)
-                self.action:title(x)
-                pings.lm_setName(x, self.id)
-                host:setActionbar("Set marker name to " .. x)
-            end
-            host:setActionbar("Type the new name in chat, or 'stop' to cancel:")
-        end)
-    self.page:newAction()
-        :title("Change icon")
-        :item("item_frame")
-        :onLeftClick(function()
-            chat_consumer = function(x)
-                if not pcall(world.newItem, x) then
-                    host:setActionbar("Invalid item!")
-                    return
-                end
-                self.action:item(x)
-                host:setActionbar("Set icon to " .. x)
-            end
-            host:setActionbar("Type the item ID for the new icon in chat, or 'stop' to cancel:")
-        end)
-    self.page:newAction()
-        :title("Set color")
-        :item("white_dye")
-        :onLeftClick(function()
-            if self.entity ~= nil then
-                host:setActionbar("Entity disguise cannot be dyed!")
-                chat_consumer = nil
-                return
-            end
-            chat_consumer = function(x)
-                -- TODO: figure out and handwrite a better blending algorithm so we can move 100% to pure setcolor
-                if not vectors.hexToRGB(x) then
-                    host:setActionbar("Invalid color!")
-                    return
-                end
-                if self.model == nil then
-                    if x == "marker_blue" then
-                        pings.lm_setSpecialColor(x, self.id)
-                    elseif x == "marker_teal" then
-                        pings.lm_setSpecialColor(x, self.id)
-                    elseif x == "marker_red" then
-                        pings.lm_setSpecialColor(x, self.id)
-                    elseif x == "marker_green" then
-                        pings.lm_setSpecialColor(x, self.id)
-                    elseif x == "marker_white" then
-                        pings.lm_setSpecialColor(x, self.id)
-                    else
-                        pings.lm_setColor(x, self.id)
-                    end
-                else
-                    pings.lm_setModelColor(x, self.id)
-                end
-                host:setActionbar("Set marker color to " .. x)
-            end
-            host:setActionbar("Type the hex code of the color in chat, or 'stop' to cancel:")
-        end)
-    self.page:newAction()
-        :title("Move to cursor")
-        :item("ender_pearl")
-        :onLeftClick(function()
-            local pos = Marker.positionFromRaycast()
-            if Marker.positionIsFree(pos) then
-                pings.lm_move(pos, self.id)
-            end
-        end)
-    self.page:newAction()
-        :title("Move to player")
-        :item("lead")
-        :onLeftClick(function()
-            if player:isLoaded() then
-                local pos = Marker.alignedPosition(player:getPos()) * 16
-                if Marker.positionIsFree(pos) then
-                    pings.lm_move(pos, self.id)
-                end
-            end
-        end)
-    self.page:newAction()
-        :title("Set scale")
-        :item("wheat")
-        :onLeftClick(function()
-            chat_consumer = function(x)
-                local new_scale = tonumber(x)
-                if not new_scale then
-                    host:setActionbar("Not a number!")
-                    return
-                end
-                pings.lm_setScale(new_scale, self.id)
-                host:setActionbar("Set scale to " .. x)
-            end
-            host:setActionbar("Type the new scale (1 is default), or 'stop' to cancel:")
-        end)
-    self.page:newAction()
-        :title("Delete")
-        :item("iron_pickaxe")
-        :onLeftClick(function() pings.lm_delete(self.id) end)
-    self.page:newAction()
-        :title("Disguise as mob")
-        :item("ghast_spawn_egg")
-        :onLeftClick(function()
-            if sneak_key:isPressed() then
-                -- NBT mode
-                chat_consumer = function(x)
-                    pings.lm_disguise(x, self.id, 0)
-                end
-                host:setActionbar("Type the new mob NBT in chat, 'disable' to disable disguise or 'stop' to cancel:")
-            else
-                -- Mob ID mode
-                chat_consumer = function(x)
-                    pings.lm_disguise(x, self.id, 1)
-                end
-                host:setActionbar("Type the new mob ID in chat, 'disable' to disable disguise or 'stop' to cancel:")
-            end
-        end)
-    self.page:newAction()
-        :title("Disguise as model")
-        :item("blaze_spawn_egg")
-        :onLeftClick(function()
-            chat_consumer = function(x)
-                pings.lm_disguise(x, self.id, 2)
-            end
-            host:setActionbar("Type the model name in chat, 'disable' to disable disguise or 'stop' to cancel:")
-        end)
-    self.page:newAction()
-        :title("Set text height")
-        :item("wheat")
-        :onLeftClick(function()
-            chat_consumer = function(x)
-                local new_height = tonumber(x)
-                if not new_height then
-                    host:setActionbar("Not a number!")
-                    return
-                end
-                pings.lm_setTextHeight(new_height, self.id)
-                host:setActionbar("Set text height to " .. x)
-            end
-            host:setActionbar("Type the new text height (34 is default, 16 is one block), or 'stop' to cancel:")
-        end)
-    self.page:newAction()
-        :title("Rotate")
-        :item("compass")
-        :onLeftClick(function()
-            chat_consumer = function(x)
-                local new_rot = tonumber(x)
-                if not new_rot then
-                    host:setActionbar("Not a number!")
-                    return
-                end
-                pings.lm_setRot(new_rot, self.id)
-                host:setActionbar("Set rotation to "..x.."°")
-            end
-            host:setActionbar("Type the new rotation or 'stop' to cancel:")
-        end)
-    self.page:newAction()
-        :title("Set light level")
-        :item("daylight_detector")
-        :onLeftClick(function()
-            chat_consumer = function(x)
-                if x == "disable" then
-                    pings.lm_setLight(nil, self.id)
-                    host:setActionbar("Light override disabled!")
-                    return
-                end
-                local new_light = tonumber(x)
-                if not new_light then
-                    host:setActionbar("Not a number!")
-                    return
-                end
-                if new_light > 15 or new_light < 0 then
-                    host:setActionbar("Out of range! Valid values are 0-15.")
-                    return
-                end
-                pings.lm_setLight(new_light, self.id)
-                host:setActionbar("Set light level to " .. x)
-            end
-            host:setActionbar("Type the new light level (fullbright is 15), 'disable' to disable or 'stop' to cancel:")
-        end)
 end
 
 ---Checks if the queried position is free of markers. Position is assumed to be aligned.
