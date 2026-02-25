@@ -2,8 +2,7 @@ local ph = require "lumimarkers/pageholder"
 local anchor = models.lumimarkers.anchor.World
 animations["lumimarkers.anchor"].idle:play():setSpeed(0.3)
 local marker_base = models.lumimarkers.marker.Marker:setLight(15, 15):setVisible(false)
-local sneak_key = keybinds:newKeybind("Sneak", keybinds:getVanillaKey("key.sneak"), true)
-local chat_consumer = nil
+
 
 if models.lumimarkers.custom then
     for _, v in pairs(models.lumimarkers.custom:getChildren()) do
@@ -212,7 +211,6 @@ function Marker:disguise(x, dis_type, silent)
         end
     end
     if (not success) or (x == "disable") then
-        local m = ph.markers[id]
         m.marker:setVisible(true)
         if m.entity then
             m.entity:setVisible(false)
@@ -245,7 +243,7 @@ function Marker:disguise(x, dis_type, silent)
 end
 
 function pings.lm_disguise(x, id, dis_type)
-    pcall(Marker.setTextHeight, ph.markers[id], x, dis_type)
+    pcall(Marker.disguise, ph.markers[id], x, dis_type)
 end
 
 function pings.lm_delete(id)
@@ -256,9 +254,9 @@ function pings.lm_delete(id)
         m.marker:setVisible(false)
         m.marker:moveTo(models)
         ph:gc()
-        if chat_consumer then
+        if lm_chatConsumer then
             host:setActionbar("Cancelled")
-            chat_consumer = nil
+            lm_chatConsumer = nil
         end
     end
 end
@@ -271,7 +269,7 @@ function pings.lm_move(pos, id)
     end
 end
 
-function pings.lm_reconstruct(name, c, spc, pos, scale, height, rot, light, dis_type, dis_cont, id)
+function pings.lm_reconstructMarker(name, c, spc, pos, scale, height, rot, light, dis_type, dis_cont, id)
     if not ph.markers[id] then
         marker = Marker:new(pos, true)
         ph.syncMarker(marker, id)
@@ -331,20 +329,6 @@ end
 ---@return Vector3
 function Marker.alignedPosition(pos)
     return vec(math.floor(pos.x) + 0.5, math.floor(pos.y), math.floor(pos.z) + 0.5)
-end
-
-function events.chat_send_message(msg)
-    if chat_consumer then
-        if msg ~= "stop" then
-            chat_consumer(msg)
-        else
-            host:setActionbar("Cancelled")
-        end
-        chat_consumer = nil
-        return nil
-    else
-        return msg
-    end
 end
 
 return Marker

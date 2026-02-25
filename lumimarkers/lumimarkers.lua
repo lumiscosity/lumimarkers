@@ -50,7 +50,7 @@ function events.tick()
         end
         --log("syncing marker at id "..#lm_queue)
         --logTable(m)
-        pings.lm_reconstruct(
+        pings.lm_reconstructMarker(
             m.text:getText(),
             m.c,
             m.spc,

@@ -1,3 +1,6 @@
+lm_chatConsumer = nil
+local sneak_key = keybinds:newKeybind("Sneak", keybinds:getVanillaKey("key.sneak"), true)
+
 ---A class describing the UI and marker/zone storage.
 ---When implementing a new UI framework, the abstract calls have to be implemented.
 ---Only one instance of a PageHolder exists; get it by requiring this file.
@@ -5,7 +8,10 @@
 local PageHolder = {
     markerPage = action_wheel:newPage(),
     markers = {},
-    markerNext = 0
+    markerNext = 0,
+    zonePage = action_wheel:newPage(),
+    zones = {},
+    zoneNext = 0
 }
 
 ---Regenerates the PageHolder.
@@ -49,17 +55,17 @@ function PageHolder.genMarkerPage(marker)
         :title("Back")
         :item("amethyst_cluster")
         :onLeftClick(function()
-            action_wheel:setPage(ph.page)
-            if chat_consumer then
+            action_wheel:setPage(ph.markerPage)
+            if lm_chatConsumer then
                 host:setActionbar("Cancelled")
-                chat_consumer = nil
+                lm_chatConsumer = nil
             end
         end)
     marker.page:newAction()
         :title("Rename")
         :item("name_tag")
         :onLeftClick(function()
-            chat_consumer = function(x)
+            lm_chatConsumer = function(x)
                 marker.action:title(x)
                 pings.lm_setName(x, marker.id)
                 host:setActionbar("Set marker name to " .. x)
@@ -70,7 +76,7 @@ function PageHolder.genMarkerPage(marker)
         :title("Change icon")
         :item("item_frame")
         :onLeftClick(function()
-            chat_consumer = function(x)
+            lm_chatConsumer = function(x)
                 if not pcall(world.newItem, x) then
                     host:setActionbar("Invalid item!")
                     return
@@ -86,10 +92,10 @@ function PageHolder.genMarkerPage(marker)
         :onLeftClick(function()
             if marker.entity ~= nil then
                 host:setActionbar("Entity disguise cannot be dyed!")
-                chat_consumer = nil
+                lm_chatConsumer = nil
                 return
             end
-            chat_consumer = function(x)
+            lm_chatConsumer = function(x)
                 -- TODO: figure out and handwrite a better blending algorithm so we can move 100% to pure setcolor
                 if not vectors.hexToRGB(x) then
                     host:setActionbar("Invalid color!")
@@ -120,8 +126,8 @@ function PageHolder.genMarkerPage(marker)
         :title("Move to cursor")
         :item("ender_pearl")
         :onLeftClick(function()
-            local pos = Marker.positionFromRaycast()
-            if Marker.positionIsFree(pos) then
+            local pos = marker.positionFromRaycast()
+            if marker.positionIsFree(pos) then
                 pings.lm_move(pos, marker.id)
             end
         end)
@@ -130,8 +136,8 @@ function PageHolder.genMarkerPage(marker)
         :item("lead")
         :onLeftClick(function()
             if player:isLoaded() then
-                local pos = Marker.alignedPosition(player:getPos()) * 16
-                if Marker.positionIsFree(pos) then
+                local pos = marker.alignedPosition(player:getPos()) * 16
+                if marker.positionIsFree(pos) then
                     pings.lm_move(pos, marker.id)
                 end
             end
@@ -140,7 +146,7 @@ function PageHolder.genMarkerPage(marker)
         :title("Set scale")
         :item("wheat")
         :onLeftClick(function()
-            chat_consumer = function(x)
+            lm_chatConsumer = function(x)
                 local new_scale = tonumber(x)
                 if not new_scale then
                     host:setActionbar("Not a number!")
@@ -161,13 +167,13 @@ function PageHolder.genMarkerPage(marker)
         :onLeftClick(function()
             if sneak_key:isPressed() then
                 -- NBT mode
-                chat_consumer = function(x)
+                lm_chatConsumer = function(x)
                     pings.lm_disguise(x, marker.id, 0)
                 end
                 host:setActionbar("Type the new mob NBT in chat, 'disable' to disable disguise or 'stop' to cancel:")
             else
                 -- Mob ID mode
-                chat_consumer = function(x)
+                lm_chatConsumer = function(x)
                     pings.lm_disguise(x, marker.id, 1)
                 end
                 host:setActionbar("Type the new mob ID in chat, 'disable' to disable disguise or 'stop' to cancel:")
@@ -177,7 +183,7 @@ function PageHolder.genMarkerPage(marker)
         :title("Disguise as model")
         :item("blaze_spawn_egg")
         :onLeftClick(function()
-            chat_consumer = function(x)
+            lm_chatConsumer = function(x)
                 pings.lm_disguise(x, marker.id, 2)
             end
             host:setActionbar("Type the model name in chat, 'disable' to disable disguise or 'stop' to cancel:")
@@ -186,7 +192,7 @@ function PageHolder.genMarkerPage(marker)
         :title("Set text height")
         :item("wheat")
         :onLeftClick(function()
-            chat_consumer = function(x)
+            lm_chatConsumer = function(x)
                 local new_height = tonumber(x)
                 if not new_height then
                     host:setActionbar("Not a number!")
@@ -201,7 +207,7 @@ function PageHolder.genMarkerPage(marker)
         :title("Rotate")
         :item("compass")
         :onLeftClick(function()
-            chat_consumer = function(x)
+            lm_chatConsumer = function(x)
                 local new_rot = tonumber(x)
                 if not new_rot then
                     host:setActionbar("Not a number!")
@@ -216,7 +222,7 @@ function PageHolder.genMarkerPage(marker)
         :title("Set light level")
         :item("daylight_detector")
         :onLeftClick(function()
-            chat_consumer = function(x)
+            lm_chatConsumer = function(x)
                 if x == "disable" then
                     pings.lm_setLight(nil, marker.id)
                     host:setActionbar("Light override disabled!")
@@ -244,7 +250,7 @@ function PageHolder:insertMarker(marker)
     PageHolder.markerNext = PageHolder.markerNext + 1
     marker.id = PageHolder.markerNext
     PageHolder.genMarkerPage(marker)
-    marker.action = ph.page:newAction()
+    marker.action = ph.markerPage:newAction()
         :title("Marker")
         :item("snowball")
         :onLeftClick(function() action_wheel:setPage(marker.page) end)
@@ -258,6 +264,20 @@ end
 function PageHolder.syncMarker(marker, id)
     marker.id = id
     PageHolder.markers[id] = marker
+end
+
+function events.chat_send_message(msg)
+    if lm_chatConsumer then
+        if msg ~= "stop" then
+            lm_chatConsumer(msg)
+        else
+            host:setActionbar("Cancelled")
+        end
+        lm_chatConsumer = nil
+        return nil
+    else
+        return msg
+    end
 end
 
 return PageHolder
