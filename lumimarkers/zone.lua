@@ -31,7 +31,9 @@ local Zone = {
     targetMarkers = nil,
     -- Internal holders for the SpriteTasks that make up a zone.
     a = nil,
-    b = nil
+    b = nil,
+    -- Set to true when the zone is due to be removed
+    removed = nil
 }
 
 function Zone.renderType()
@@ -105,7 +107,7 @@ function Zone:spawnZoneVisuals()
         local posb = pos + vec(0.25, 0, 0.25)
         -- adjust positions for raycasting
         -- the first raycast is done on the nearest corner of the block
-        -- the second rayca
+        -- the second raycast is done nearer to the center
         local xo = xt%2
         local zo = zt%2
         local xco = pos + vec(xo*0.49, 0, zo*0.49)
@@ -195,8 +197,6 @@ function Zone:getTargetPlayers()
     return out
 end
 
-local zones = {}
-
 --table.insert(zones, Zone:new(vec(0, 0, 0), 16, 16, vec(1.0, 0.5, 0.1, 0.35), true, true))
 
 local targets = {}
@@ -267,7 +267,7 @@ events.tick:register(
         -- find targetted players/markers
         local ft = {}
         local min = math.min
-        for _, i in pairs(zones) do
+        for _, i in pairs(ph.zones) do
             if i.targetPlayers then
                 local f = i:getTargetPlayers()
                 for _, pl in pairs(f) do
@@ -276,7 +276,9 @@ events.tick:register(
                     if t then
                         local up = pl:getPos()*16
                         t.lifetime = min(t.lifetime + 0.1, 1)
-                        smoothMove("lm_zt_"..u, t.model, t.lastpos, up)
+                        if t.lastpos ~= up then
+                            smoothMove("lm_zt_"..u, t.model, t.lastpos, up)
+                        end
                         t.lastpos = up
                     else
                         targets[u] = Target:new(pl:getPos()*16, true, u)
@@ -315,7 +317,7 @@ events.render:register(
     function(delta)
         local r = Zone.renderType()
         local ar = Zone.animRenderType()
-        for _, i in pairs(zones) do
+        for _, i in pairs(ph.zones) do
             if shaderListener ~= client.hasShaderPack() then
                 for _, j in pairs(i.a) do
                     j:setRenderType(r)

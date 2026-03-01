@@ -4,7 +4,7 @@
 --  ||__| \\_// ||    || || ||    || || || || \\ || \\ ||___ || \\ \_))
 --
 --  v2.0.0 - made by lumiscosity
---  Action Bar variant
+--  Action Wheel variant
 --  See https://github.com/lumiscosity/lumimarkers for details!
 --
 
@@ -20,10 +20,22 @@ end
 
 lm_sync_timer = 20
 lm_queue = {}
+lm_reciever = {}
 
-function constructSyncQueue()
+function pings.lm_sendZoneInitPiece(index, data)
+
+end
+
+function pings.lm_sendZoneVisualsPiece(index, data)
+    table.insert(lm_reciever)
+end
+
+local function constructSyncQueue()
     queue = {}
     for _, v in pairs(ph.markers) do
+       table.insert(queue, v)
+    end
+    for _, v in pairs(ph.zones) do
        table.insert(queue, v)
     end
     return queue
@@ -48,23 +60,28 @@ function events.tick()
             lm_queue = constructSyncQueue()
             return
         end
-        --log("syncing marker at id "..#lm_queue)
-        --logTable(m)
-        pings.lm_reconstructMarker(
-            m.text:getText(),
-            m.c,
-            m.spc,
-            m.marker:getPos(),
-            m.marker:getScale()[2],
-            m.text_anchor:getPivot()[2],
-            m.marker:getRot()[2],
-            m.marker:getLight(),
-            m.dis_type,
-            m.dis_cont,
-            m.id
-        )
-        lm_sync_timer = 20
-        table.remove(lm_queue)
+
+        if m.aanchor then
+            --log("syncing zone at id "..#lm_queue)
+        else
+            --log("syncing marker at id "..#lm_queue)
+            --logTable(m)
+            pings.lm_reconstructMarker(
+                m.text:getText(),
+                m.c,
+                m.spc,
+                m.marker:getPos(),
+                m.marker:getScale()[2],
+                m.text_anchor:getPivot()[2],
+                m.marker:getRot()[2],
+                m.marker:getLight(),
+                m.dis_type,
+                m.dis_cont,
+                m.id
+            )
+            lm_sync_timer = 20
+            table.remove(lm_queue)
+        end
     end
 end
 

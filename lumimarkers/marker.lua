@@ -1,8 +1,6 @@
-local ph = require "lumimarkers/pageholder"
 local anchor = models.lumimarkers.anchor.World
 animations["lumimarkers.anchor"].idle:play():setSpeed(0.3)
 local marker_base = models.lumimarkers.marker.Marker:setLight(15, 15):setVisible(false)
-
 
 if models.lumimarkers.custom then
     for _, v in pairs(models.lumimarkers.custom:getChildren()) do
@@ -48,7 +46,7 @@ local Marker = {
 ---Spawns a new Marker.
 ---@param pos Vector3
 ---@return Marker
-function Marker:new(pos, syncing)
+function Marker:new(pos)
     local n = setmetatable({}, self)
     self.__index = self
     n.marker = marker_base:copy("MarkerModel")
@@ -119,8 +117,8 @@ function pings.lm_setModelColor(c, id)
 end
 
 function Marker:setScale(scale)
-    self.marker:setScale(scale, scale, scale)
-    self.static_anchor:setScale(scale, scale, scale)
+    self.marker:setScale(scale)
+    self.static_anchor:setScale(scale)
 end
 
 function pings.lm_setScale(scale, id)
@@ -145,6 +143,9 @@ function pings.lm_setRot(rot, id)
 end
 
 function Marker:setLight(light)
+    if light == 255 then
+        light = nil
+    end
     self.marker:setLight(light)
     self.static_anchor:setLight(light)
 end
@@ -292,6 +293,199 @@ function pings.lm_reconstructMarker(name, c, spc, pos, scale, height, rot, light
     marker:setRot(rot)
     marker:setLight(light)
     marker:disguise(dis_cont, dis_type, 1)
+end
+
+local convhelper = data:createBuffer()
+
+local function writeLen(f, i)
+    f:write(bit32.extract(i, 8, 8))
+    f:write(bit32.extract(i, 0, 8))
+end
+
+local function writeData(f,l)
+    writeLen(f,l)
+    for i=0,l-1 do
+        convhelper:setPosition(i)
+        f:write(convhelper:read())
+    end
+    convhelper:setPosition(0)
+    convhelper:clear()
+end
+
+local function writeString(f, i)
+    local l = convhelper:writeString(i)
+    writeData(f,l)
+end
+
+local function writeInt(f, i)
+    convhelper:writeInt(i)
+    writeData(f,4)
+end
+
+local function writeDouble(f, i)
+    convhelper:writeDouble(i)
+    writeData(f,8)
+end
+
+local function writeVec3(f, i)
+    convhelper:writeDouble(i[1])
+    convhelper:writeDouble(i[2])
+    convhelper:writeDouble(i[3])
+    writeData(f,24)
+end
+
+function Marker:saveToLMP(filename)
+    if not file:isDirectory("lumimarkers") then
+        file:delete("lumimarkers")
+    end
+    if not file:exists("lumimarkers") then
+        file:mkdir("lumimarkers")
+    end
+    local path = "lumimarkers/"..filename..".lmp"
+    if file:exists(path) then
+        file:delete(path)
+    end
+    local f = file:openWriteStream(path)
+    -- LMP header
+    f:write(76)
+    f:write(77)
+    f:write(80)
+    if self.text:getText() then
+        f:write(0)
+        writeString(f, self.text:getText())
+    end
+    if self.c then
+        f:write(1)
+        writeString(f, self.c)
+    end
+    if self.spc then
+        f:write(2)
+        writeString(f, self.spc)
+    end
+    f:write(3)
+    writeVec3(f, self.static_anchor:getPos())
+    if self.static_anchor:getScale() ~= vec(1, 1, 1) then
+        f:write(4)
+        writeVec3(f, self.static_anchor:getScale())
+    end
+    if self.text_anchor:getPivot()[2] ~= 34 then
+        f:write(5)
+        writeDouble(f, self.text_anchor:getPivot()[2])
+    end
+    if self.static_anchor:getRot()[2] ~= 0 then
+        f:write(6)
+        writeDouble(f, self.static_anchor:getRot()[2])
+    end
+    if self.static_anchor:getLight() then
+        if self.static_anchor:getLight() ~= vec(15, 15) then
+            f:write(7)
+            writeInt(f, self.static_anchor:getLight()[1])
+        end
+    else
+        f:write(7)
+        writeLen(f,1)
+        f:write(255)
+    end
+    if self.dis_type then
+        f:write(8)
+        writeInt(f, self.dis_type)
+    end
+    if self.dis_cont then
+        f:write(9)
+        writeString(f, self.dis_cont)
+    end
+    f:close()
+end
+
+local function streamToBuf(s, b, i)
+    b:clear()
+    for j=0,i-1 do
+        b:write(s:read())
+    end
+    b:setPosition(0)
+end
+
+local function readVec3(b)
+    local o = vec(b:readDouble(), 0, 0)
+    b:setPosition(8)
+    o[2] = b:readDouble()
+    b:setPosition(16)
+    o[3] = b:readDouble()
+    return o
+end
+
+---Loads the LMP data into this marker.
+---@param String filename
+---@param boolean pos (whether to load the position)
+---@return String (error code)
+function Marker:loadFromLMP(filename, pos)
+    local path = "lumimarkers/"..filename..".lmp"
+    if not file:exists(path) then
+        return "File at "..path.." not found!"
+    end
+    local cnr = "Could not read file at "..path
+    local st = file:openReadStream(path)
+    local buf = data:createBuffer()
+    -- Header check
+    if not pcall(streamToBuf, st, buf, 3) then
+        return cnr..": file is corrupted"
+    end
+    local hc = buf:readString(3)
+    if hc ~= "LMP" then
+        return cnr..": header mismatch: expected LMP, got "..hc
+    end
+    local m = Marker:new(self.pos)
+    m.marker:setVisible(false)
+    m.static_anchor:setVisible(false)
+    while st:available() > 0 do
+        local id, l = 0
+        if not pcall(function()
+            id = st:read()
+            l = st:read() * 256 + st:read()
+        end) then
+            return cnr..": dangling chunk "..id
+        end
+        if not pcall(streamToBuf, st, buf, l) then
+            return cnr..": reached EOF while reading chunk "..id
+        end
+        if id == 0 then
+            m:setName(buf:readString(l))
+        elseif id == 1 then
+            m:setColor(buf:readString(l))
+        elseif id == 2 then
+            m:setSpecialColor(buf:readString(l))
+        elseif id == 3 and pos then
+            m:setPos(readVec3(buf))
+        elseif id == 4 then
+            m:setScale(readVec3(buf))
+        elseif id == 5 then
+            m:setTextHeight(buf:readDouble())
+        elseif id == 6 then
+            m:setRot(buf:readDouble())
+        elseif id == 7 then
+            m:setLight(buf:readInt())
+        elseif id == 8 then
+            m.dis_type = buf:readInt(l)
+        elseif id == 9 then
+            m.dis_cont = buf:readString(l)
+        end
+    end
+    pings.lm_reconstructMarker(
+        m.text:getText(),
+        m.c,
+        m.spc,
+        m.marker:getPos(),
+        m.marker:getScale(),
+        m.text_anchor:getPivot()[2],
+        m.marker:getRot()[2],
+        m.marker:getLight(),
+        m.dis_type,
+        m.dis_cont,
+        self.id
+    )
+    m = nil
+    st:close()
+    buf:close()
 end
 
 ---Checks if the queried position is free of markers. Position is assumed to be aligned.

@@ -17,10 +17,33 @@ local PageHolder = {
 ---Regenerates the PageHolder.
 function PageHolder:reset()
     PageHolder.markerPage = action_wheel:newPage()
+    PageHolder.zonePage = action_wheel:newPage()
+
     PageHolder.markerPage:newAction()
     :title("Spawn marker")
     :item("amethyst_shard")
     :onLeftClick(pings.lm_spawnMarkerAtRaycast)
+    PageHolder.markerPage:newAction()
+    :title("Switch to zones")
+    :item("orange_concrete")
+    :onLeftClick(function()
+        action_wheel:setPage(PageHolder.zonePage)
+    end)
+
+    PageHolder.zonePage:newAction()
+    :title("Spawn rectangular zone")
+    :item("orange_banner")
+    :onLeftClick(lm_spawnRectZone)
+    PageHolder.zonePage:newAction()
+    :title("Spawn circular zone")
+    :item("orange_dye")
+    :onLeftClick(lm_spawnCircleZone)
+    PageHolder.zonePage:newAction()
+    :title("Switch to markers")
+    :item("blue_concrete")
+    :onLeftClick(function()
+        action_wheel:setPage(PageHolder.markerPage)
+    end)
 
     PageHolder.markerNext = 0
     local newMarkers = {}
@@ -38,16 +61,29 @@ function PageHolder:reset()
     for _, v in pairs(PageHolder.markers) do
         PageHolder.markerPage:setAction(-1, v.action)
     end
+
+    PageHolder.zoneNext = 0
+    local newZones = {}
+
+    for _, v in pairs(PageHolder.zones) do
+        if not v.removed then
+            PageHolder.zoneNext = PageHolder.zoneNext + 1
+            v.id = PageHolder.zoneNext
+            newZones[PageHolder.zoneNext] = v
+        end
+    end
+
+    PageHolder.zones = newZones
+
+    for _, v in pairs(PageHolder.zones) do
+        PageHolder.zonePage:setAction(-1, v.action)
+    end
 end
 
 ---Removes all markers/zones queued for deletion.
 function PageHolder:gc()
     PageHolder:reset()
     action_wheel:setPage(PageHolder.markerPage)
-end
-
-function getMarker(id)
-    return PageHolder.markers[id]
 end
 
 function PageHolder.genMarkerPage(marker)
@@ -152,7 +188,7 @@ function PageHolder.genMarkerPage(marker)
                     host:setActionbar("Not a number!")
                     return
                 end
-                pings.lm_setScale(new_scale, marker.id)
+                pings.lm_setScale(vec(new_scale, new_scale, new_scale), marker.id)
                 host:setActionbar("Set scale to " .. x)
             end
             host:setActionbar("Type the new scale (1 is default), or 'stop' to cancel:")
@@ -229,8 +265,8 @@ function PageHolder.genMarkerPage(marker)
                     return
                 end
                 local new_light = tonumber(x)
-                if not new_light then
-                    host:setActionbar("Not a number!")
+                if not new_light or new_light ~= math.floor(new_light) then
+                    host:setActionbar("Not an integer!")
                     return
                 end
                 if new_light > 15 or new_light < 0 then
@@ -241,6 +277,30 @@ function PageHolder.genMarkerPage(marker)
                 host:setActionbar("Set light level to " .. x)
             end
             host:setActionbar("Type the new light level (fullbright is 15), 'disable' to disable or 'stop' to cancel:")
+        end)
+    marker.page:newAction()
+        :title("Save preset")
+        :item("campfire")
+        :onLeftClick(function()
+            lm_chatConsumer = function(x)
+                marker:saveToLMP(x)
+                host:setActionbar("Saved preset as " .. x .. ".lmp (in figura/data/lumimarkers)")
+            end
+            host:setActionbar("Type a filename or 'stop' to cancel:")
+        end)
+    marker.page:newAction()
+        :title("Load preset")
+        :item("soul_campfire")
+        :onLeftClick(function()
+            lm_chatConsumer = function(x)
+                local result = marker:loadFromLMP(x, sneak_key:isPressed())
+                if result then
+                    host:setActionbar(result)
+                else
+                    host:setActionbar("Loaded!")
+                end
+            end
+            host:setActionbar("Type a filename or 'stop' to cancel:")
         end)
 end
 
@@ -264,6 +324,29 @@ end
 function PageHolder.syncMarker(marker, id)
     marker.id = id
     PageHolder.markers[id] = marker
+end
+
+function PageHolder.genZonePage(zone)
+    zone.page:newAction()
+        :title("Back")
+        :item("amethyst_cluster")
+        :onLeftClick(function()
+            action_wheel:setPage(ph.zonePage)
+            if lm_chatConsumer then
+                host:setActionbar("Cancelled")
+                lm_chatConsumer = nil
+            end
+        end)
+    zone.page:newAction()
+        :title("Move")
+        :item("amethyst_cluster")
+        :onLeftClick(function()
+            action_wheel:setPage(ph.zonePage)
+            if lm_chatConsumer then
+                host:setActionbar("Cancelled")
+                lm_chatConsumer = nil
+            end
+        end)
 end
 
 function events.chat_send_message(msg)
