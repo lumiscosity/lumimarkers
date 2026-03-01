@@ -469,7 +469,7 @@ function Marker:loadFromLMP(filename, pos)
         elseif id == 5 then
             m:setTextHeight(buf:readDouble())
         elseif id == 6 then
-            m:setRot(buf:readVec3())
+            m:setRot(readVec3(buf))
         elseif id == 7 then
             m:setLight(buf:readInt())
         elseif id == 8 then
@@ -491,6 +491,9 @@ function Marker:loadFromLMP(filename, pos)
         m.dis_cont,
         self.id
     )
+    m.static_anchor = nil
+    m.text_static:setVisible(false)
+    m.text_static = nil
     m = nil
     st:close()
     buf:close()
