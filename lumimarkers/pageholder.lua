@@ -1,4 +1,9 @@
+-- The Action Wheel pageholder style adds the following components to markers/zones:
+-- action: The action used to represent this marker. The title of this action is the marker's name.
+-- page: The configuration page for this marker.
+
 lm_chatConsumer = nil
+lm_preserve_consumer = false
 local sneak_key = keybinds:newKeybind("Sneak", keybinds:getVanillaKey("key.sneak"), true)
 
 ---A class describing the UI and marker/zone storage.
@@ -182,16 +187,50 @@ function PageHolder.genMarkerPage(marker)
         :title("Set scale")
         :item("wheat")
         :onLeftClick(function()
-            lm_chatConsumer = function(x)
-                local new_scale = tonumber(x)
-                if not new_scale then
-                    host:setActionbar("Not a number!")
-                    return
+            if sneak_key:isPressed() then
+                lm_chatConsumer = function(x)
+                    local nx = tonumber(x)
+                    if not nx then
+                        host:setActionbar("Not a number!")
+                        lm_preserve_consumer = false
+                        return
+                    end
+                    lm_preserve_consumer = true
+                    lm_chatConsumer = function(y)
+                        local ny = tonumber(y)
+                        if not ny then
+                            host:setActionbar("Not a number!")
+                            lm_preserve_consumer = false
+                            return
+                        end
+                        lm_preserve_consumer = true
+                        lm_chatConsumer = function(z)
+                            local nz = tonumber(z)
+                            if not nz then
+                                host:setActionbar("Not a number!")
+                                lm_preserve_consumer = false
+                                return
+                            end
+                            pings.lm_setScale(vec(nx, ny, nz), marker.id)
+                            host:setActionbar("Set scale to "..nx..", "..ny..", "..nz)
+                        end
+                        host:setActionbar("Type the new scale Z or 'stop' to cancel:")
+                    end
+                    host:setActionbar("Type the new scale Y or 'stop' to cancel:")
                 end
-                pings.lm_setScale(vec(new_scale, new_scale, new_scale), marker.id)
-                host:setActionbar("Set scale to " .. x)
+                host:setActionbar("Type the new scale X or 'stop' to cancel:")
+            else
+                lm_chatConsumer = function(x)
+                    local new_scale = tonumber(x)
+                    if not new_scale then
+                        host:setActionbar("Not a number!")
+                        return
+                    end
+                    pings.lm_setScale(vec(new_scale, new_scale, new_scale), marker.id)
+                    host:setActionbar("Set scale to "..x.."°")
+                end
+                host:setActionbar("Type the new scale (1 is default), or 'stop' to cancel:")
             end
-            host:setActionbar("Type the new scale (1 is default), or 'stop' to cancel:")
         end)
     marker.page:newAction()
         :title("Delete")
@@ -243,16 +282,50 @@ function PageHolder.genMarkerPage(marker)
         :title("Rotate")
         :item("compass")
         :onLeftClick(function()
-            lm_chatConsumer = function(x)
-                local new_rot = tonumber(x)
-                if not new_rot then
-                    host:setActionbar("Not a number!")
-                    return
+            if sneak_key:isPressed() then
+                lm_chatConsumer = function(x)
+                    local nx = tonumber(x)%360
+                    if not nx then
+                        host:setActionbar("Not a number!")
+                        lm_preserve_consumer = false
+                        return
+                    end
+                    lm_preserve_consumer = true
+                    lm_chatConsumer = function(y)
+                        local ny = tonumber(y)%360
+                        if not ny then
+                            host:setActionbar("Not a number!")
+                            lm_preserve_consumer = false
+                            return
+                        end
+                        lm_preserve_consumer = true
+                        lm_chatConsumer = function(z)
+                            local nz = tonumber(z)%360
+                            if not nz then
+                                host:setActionbar("Not a number!")
+                                lm_preserve_consumer = false
+                                return
+                            end
+                            pings.lm_setRot(vec(nx, ny, nz), marker.id)
+                            host:setActionbar("Set rotation to "..nx.."°X, "..ny.."°Y, "..nz.."°Z")
+                        end
+                        host:setActionbar("Type the new rotation Z or 'stop' to cancel:")
+                    end
+                    host:setActionbar("Type the new rotation Y or 'stop' to cancel:")
                 end
-                pings.lm_setRot(new_rot, marker.id)
-                host:setActionbar("Set rotation to "..x.."°")
+                host:setActionbar("Type the new rotation X or 'stop' to cancel:")
+            else
+                lm_chatConsumer = function(x)
+                    local new_rot = tonumber(x)%360
+                    if not new_rot then
+                        host:setActionbar("Not a number!")
+                        return
+                    end
+                    pings.lm_setRot(vec(0, new_rot, 0), marker.id)
+                    host:setActionbar("Set rotation to "..new_rot.."°")
+                end
+                host:setActionbar("Type the new rotation or 'stop' to cancel:")
             end
-            host:setActionbar("Type the new rotation or 'stop' to cancel:")
         end)
     marker.page:newAction()
         :title("Set light level")
@@ -356,7 +429,10 @@ function events.chat_send_message(msg)
         else
             host:setActionbar("Cancelled")
         end
-        lm_chatConsumer = nil
+        if not lm_preserve_consumer then
+            lm_chatConsumer = nil
+        end
+        lm_preserve_consumer = false
         return nil
     else
         return msg

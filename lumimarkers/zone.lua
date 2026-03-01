@@ -15,6 +15,8 @@ local taskIDOffset = 0
 ---A zone highlighted on the ground.
 ---@class Zone
 local Zone = {
+    -- The position of this zone in the PageHolder.
+    id = nil,
     -- Anchor models used to position the zone.
     anchor = nil,
     aanchor = nil,

@@ -15,19 +15,18 @@ local Marker = {
     id = nil,
     -- The marker model.
     marker = nil,
-    -- The action used to represent this marker. The title of this action is the marker's name.
-    -- action = nil,
-    -- The configuration page for this marker.
-    -- page = nil,
     -- The TextTask used to display this marker's name.
     text = nil,
     -- A ModelPart with the Billboard parent type which holds the text.
     text_anchor = nil,
+    -- A ModelPart with the World parent type.
+    -- Used over static_anchor to ignore scale/rotation.
+    text_static = nil,
     -- The EntityTask used to disguise this marker as an entity. If entity mode is disabled, this is nil.
     entity = nil,
     -- The ModelPart used to disguise this marker as a model. If model mode is disabled, this is nil.
     model = nil,
-    -- A name used to differentiate this part from others.
+    -- Used to detect when the model changes.
     model_name = nil,
     -- A ModelPart placed at the raw position of a marker, used to anchor the entity.
     static_anchor = nil,
@@ -35,9 +34,9 @@ local Marker = {
     c = nil,
     -- Special marker color, nil if none.
     spc = nil,
-    -- Disguise type.
+    -- Disguise type. One of 0 (raw NBT entity), 1 (simple entity) or 2 (model).
     dis_type = nil,
-    -- Disguise contents.
+    -- Disguise contents. Exact makeup depends on type.
     dis_cont = nil,
     -- Set to true when the marker is due to be removed
     removed = nil
@@ -54,9 +53,9 @@ function Marker:new(pos)
         :setPos(pos)
         :setVisible(true)
     n.static_anchor = models:newPart("EntityAnchor", "World"):setPos(pos):setLight(15)
-    n.page = action_wheel:newPage("HolderPage")
 
-    n.text_anchor = models:newPart("TextAnchor", "BILLBOARD"):setPivot(0, 34, 0):moveTo(n.marker)
+    n.text_static = models:newPart("TextStatic", "WORLD"):setPos(pos)
+    n.text_anchor = n.text_static:newPart("TextAnchor", "BILLBOARD"):setPivot(0, 34, 0)
     n.text = n.text_anchor:newText("MarkerText"):setText("Marker"):setAlignment("CENTER"):setScale(0.5, 0.5, 0.5):setBackground(true)
     n.removed = false
     return n
@@ -134,8 +133,8 @@ function pings.lm_setTextHeight(height, id)
 end
 
 function Marker:setRot(rot)
-    self.marker:setRot(0, rot, 0)
-    self.static_anchor:setRot(0, rot, 0)
+    self.marker:setRot(rot)
+    self.static_anchor:setRot(rot)
 end
 
 function pings.lm_setRot(rot, id)
@@ -145,9 +144,17 @@ end
 function Marker:setLight(light)
     if light == 255 then
         light = nil
+    elseif type(light) == Number then
+        light = vec(light, light)
     end
     self.marker:setLight(light)
     self.static_anchor:setLight(light)
+    if self.model then
+        self.model:setLight(light)
+    end
+    if self.entity then
+        self.entity:setLight(light)
+    end
 end
 
 function pings.lm_setLight(light, id)
@@ -163,12 +170,14 @@ function Marker:disguise(x, dis_type, silent)
             m.entity = m.static_anchor
                 :newEntity("MarkerMob")
                 :setNbt(x)
+                :setLight(m.static_anchor:getLight())
         end)
     elseif dis_type == 1 then
         success = pcall(function()
             m.entity = m.static_anchor
                 :newEntity("MarkerMob")
                 :setNbt('{id:"'..x..'"}')
+                :setLight(m.static_anchor:getLight())
         end)
     else
         if m.model and (x == m.model_name) then return end
@@ -181,6 +190,7 @@ function Marker:disguise(x, dis_type, silent)
             m.model = models.lumimarkers.custom[x]:copy("MarkerDisguise")
                 :moveTo(m.static_anchor)
                 :setVisible(true)
+                :setLight(m.static_anchor:getLight())
             m.model_name = x
         end)
     end
@@ -219,7 +229,6 @@ function Marker:disguise(x, dis_type, silent)
         if m.model then
             m.model:setVisible(false)
         end
-        m.text_anchor:moveTo(m.marker)
         m.entity = nil
         m.model = nil
         m.dis_type = nil
@@ -227,7 +236,6 @@ function Marker:disguise(x, dis_type, silent)
         return
     end
     m.marker:setVisible(false)
-    m.text_anchor:moveTo(m.static_anchor)
     m.dis_type = dis_type
     m.dis_cont = x
     if not silent then
@@ -374,7 +382,7 @@ function Marker:saveToLMP(filename)
     end
     if self.static_anchor:getRot()[2] ~= 0 then
         f:write(6)
-        writeDouble(f, self.static_anchor:getRot()[2])
+        writeVec3(f, self.static_anchor:getRot())
     end
     if self.static_anchor:getLight() then
         if self.static_anchor:getLight() ~= vec(15, 15) then
@@ -417,7 +425,7 @@ end
 ---Loads the LMP data into this marker.
 ---@param String filename
 ---@param boolean pos (whether to load the position)
----@return String (error code)
+---@return String (error code) or nil (success)
 function Marker:loadFromLMP(filename, pos)
     local path = "lumimarkers/"..filename..".lmp"
     if not file:exists(path) then
@@ -461,11 +469,11 @@ function Marker:loadFromLMP(filename, pos)
         elseif id == 5 then
             m:setTextHeight(buf:readDouble())
         elseif id == 6 then
-            m:setRot(buf:readDouble())
+            m:setRot(buf:readVec3())
         elseif id == 7 then
             m:setLight(buf:readInt())
         elseif id == 8 then
-            m.dis_type = buf:readInt(l)
+            m.dis_type = buf:readInt()
         elseif id == 9 then
             m.dis_cont = buf:readString(l)
         end
@@ -477,7 +485,7 @@ function Marker:loadFromLMP(filename, pos)
         m.marker:getPos(),
         m.marker:getScale(),
         m.text_anchor:getPivot()[2],
-        m.marker:getRot()[2],
+        m.marker:getRot(),
         m.marker:getLight(),
         m.dis_type,
         m.dis_cont,
