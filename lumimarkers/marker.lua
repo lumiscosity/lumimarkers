@@ -281,6 +281,7 @@ function pings.lm_move(pos, id)
     if m then
         m.marker:setPos(pos)
         m.static_anchor:setPos(pos)
+        m.text_static:setPos(pos)
     end
 end
 
