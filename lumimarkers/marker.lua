@@ -260,8 +260,14 @@ function pings.lm_delete(id)
     if m then
         m.removed = true
         m.static_anchor:setVisible(false)
+        m.text_static:setVisible(false)
         m.marker:setVisible(false)
-        m.marker:moveTo(models)
+        m.marker = nil
+        m.static_anchor = nil
+        m.text_static = nil
+        m.text_anchor = nil
+        m.text = nil
+        m.model = nil
         ph:gc()
         if lm_chatConsumer then
             host:setActionbar("Cancelled")
@@ -380,7 +386,7 @@ function Marker:saveToLMP(filename)
         f:write(5)
         writeDouble(f, self.text_anchor:getPivot()[2])
     end
-    if self.static_anchor:getRot()[2] ~= 0 then
+    if self.static_anchor:getRot() ~= vec(0, 0, 0) then
         f:write(6)
         writeVec3(f, self.static_anchor:getRot())
     end
