@@ -4,6 +4,27 @@
 
 lm_chatConsumer = nil
 lm_preserve_consumer = false
+
+local action_wheels = {}
+local current_wheel = 1
+
+function lm_addActionWheel(page, name)
+    table.insert(action_wheels, {
+        name = name,
+        page = page
+    })
+end
+
+local switch_key = keybinds:newKeybind("Switch action wheel", "key.keyboard.n", true)
+
+switch_key.press = function()
+    if #action_wheels > 1 then
+        current_wheel = (current_wheel % #action_wheels) + 1
+        action_wheel:setPage(action_wheels[current_wheel].page)
+        host:setActionbar("Switched to action wheel: "..action_wheels[current_wheel].name)
+    end
+end
+
 local sneak_key = keybinds:newKeybind("Sneak", keybinds:getVanillaKey("key.sneak"), true)
 
 ---A class describing the UI and marker/zone storage.
@@ -438,5 +459,9 @@ function events.chat_send_message(msg)
         return msg
     end
 end
+
+PageHolder:reset()
+action_wheel:setPage(PageHolder.markerPage)
+lm_addActionWheel(PageHolder.markerPage, "lumiMarkers")
 
 return PageHolder

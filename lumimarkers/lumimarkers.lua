@@ -86,6 +86,3 @@ function events.tick()
         end
     end
 end
-
-ph:reset()
-action_wheel:setPage(ph.markerPage)
