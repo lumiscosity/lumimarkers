@@ -350,6 +350,9 @@ local function writeVec3(f, i)
 end
 
 function Marker:saveToLMP(filename)
+    if not file:exists("../data") then
+        file:mkdir("../data")
+    end
     if not file:isDirectory("lumimarkers") then
         file:delete("lumimarkers")
     end
