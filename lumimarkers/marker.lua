@@ -501,6 +501,7 @@ function Marker:loadFromLMP(filename, pos)
         m.dis_cont,
         self.id
     )
+    ph.onMarkerPresetLoad(m, self.id)
     m.static_anchor = nil
     m.text_static:setVisible(false)
     m.text_static = nil

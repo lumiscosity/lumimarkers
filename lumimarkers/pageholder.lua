@@ -422,6 +422,10 @@ function PageHolder.syncMarker(marker, id)
     PageHolder.markers[id] = marker
 end
 
+function PageHolder.onMarkerPresetLoad(tempmarker, id)
+    PageHolder.markers[id].action:title(tempmarker.text:getText())
+end
+
 function PageHolder.genZonePage(zone)
     zone.page:newAction()
         :title("Back")

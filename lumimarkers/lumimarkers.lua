@@ -3,7 +3,7 @@
 --  ||    || || || \/ || || || \/ || ||=|| ||_// ||<<  ||==  ||_//  \\
 --  ||__| \\_// ||    || || ||    || || || || \\ || \\ ||___ || \\ \_))
 --
---  v2.0.0-pre3 - made by lumiscosity
+--  v2.0.0 - made by lumiscosity
 --  Action Wheel variant
 --  See https://github.com/lumiscosity/lumimarkers for details!
 --
